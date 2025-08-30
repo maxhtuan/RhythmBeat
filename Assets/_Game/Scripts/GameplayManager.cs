@@ -54,8 +54,21 @@ public class GameplayManager : MonoBehaviour
     // Add this field at the top of GameplayManager class
     private Dictionary<NoteData, GameObject> noteToGameObjectMap = new Dictionary<NoteData, GameObject>();
 
+    // Add this field to store the original travel speed
+    private float originalTravelSpeed = 0f;
+
     // Setup state
     private bool isSetupComplete = false;
+
+    // Add this field at the top of GameplayManager class
+    [Header("Settings")]
+    public GameSettingsManager settingsManager;
+
+    // Add this field
+    [Header("Metronome")]
+    public MetronomeManager metronomeManager;
+
+    // Make it public so SpeedUpMode can access it
 
     async void Start()
     {
@@ -74,9 +87,9 @@ public class GameplayManager : MonoBehaviour
         await WaitForGameBoardInitialization();
         Debug.Log("GameBoard initialized");
 
-        // Step 3: Wait for other managers to be ready
-        // await WaitForManagersReady();
-        // Debug.Log("All managers ready");
+        // Step 3: Initialize original travel speed
+        InitializeOriginalTravelSpeed();
+        Debug.Log($"Original travel speed initialized: {originalTravelSpeed}");
 
         // Step 4: Pre-spawn initial notes
         PreSpawnInitialNotes();
@@ -262,7 +275,7 @@ public class GameplayManager : MonoBehaviour
         currentTime = hitNote.startTime;
         Debug.Log($"First note hit! Game started! Syncing to note '{hitNote.pitch}' at {currentTime:F2}s");
 
-        // Start game mode
+        // Start game mode (SpeedUpMode will handle metronome)
         if (gameModeManager != null)
         {
             gameModeManager.StartMode();
@@ -334,6 +347,12 @@ public class GameplayManager : MonoBehaviour
         if (gameUIManager != null)
         {
             gameUIManager.OnGameRestarted();
+        }
+
+        // Stop metronome
+        if (metronomeManager != null)
+        {
+            metronomeManager.StopMetronome();
         }
 
         Debug.Log("Game restarted! Pre-spawned notes for first 5 seconds. Hit the first note to start!");
@@ -686,12 +705,27 @@ public class GameplayManager : MonoBehaviour
     // Add method to set BPM and time scale
     public void SetBPM(float newBPM)
     {
+        // Check max BPM limit
+        if (settingsManager != null && settingsManager.MaxBPM > 0)
+        {
+            newBPM = Mathf.Min(newBPM, settingsManager.MaxBPM);
+        }
+
         currentBPM = newBPM;
         timeScale = newBPM / originalBPM;
 
         // Update note travel time to maintain visual consistency
         float speedMultiplier = currentBPM / originalBPM;
         noteTravelTime = 3f / speedMultiplier;
+
+        // Calculate and store the original travel speed if not already done
+        if (originalTravelSpeed == 0f && gameBoard != null)
+        {
+            Vector3 spawnPos = gameBoard.GetSpawnPosition("C");
+            Vector3 targetPos = gameBoard.GetTargetPosition("C");
+            float totalDistance = Vector3.Distance(spawnPos, targetPos);
+            originalTravelSpeed = totalDistance / 3f; // Based on original noteTravelTime of 3f
+        }
 
         Debug.Log($"BPM changed to {newBPM}, Time scale: {timeScale:F2}, Note travel time: {noteTravelTime:F2}");
     }
@@ -704,5 +738,34 @@ public class GameplayManager : MonoBehaviour
         noteTravelTime = 3f;
 
         Debug.Log($"BPM reset to original: {originalBPM}");
+    }
+
+    // Add a getter for the original travel speed
+    public float GetOriginalTravelSpeed()
+    {
+        // If originalTravelSpeed is still 0, calculate it now
+        if (originalTravelSpeed == 0f && gameBoard != null)
+        {
+            InitializeOriginalTravelSpeed();
+        }
+
+        // Fallback if still 0
+        if (originalTravelSpeed == 0f)
+        {
+            return 1f; // Return a safe default value
+        }
+
+        return originalTravelSpeed;
+    }
+
+    private void InitializeOriginalTravelSpeed()
+    {
+        if (originalTravelSpeed == 0f && gameBoard != null)
+        {
+            Vector3 spawnPos = gameBoard.GetSpawnPosition("C");
+            Vector3 targetPos = gameBoard.GetTargetPosition("C");
+            float totalDistance = Vector3.Distance(spawnPos, targetPos);
+            originalTravelSpeed = totalDistance / noteTravelTime; // Use the current noteTravelTime
+        }
     }
 }

@@ -26,7 +26,8 @@ public class NoteController : MonoBehaviour
     private bool isHit = false;
     private bool isMissed = false;
     private float hitWindow = 0.2f; // This will be set from GameplayManager
-    private GameplayManager gameplayManager;
+    [Header("Settings")]
+    public GameplayManager gameplayManager;
 
     // Linking system
     private PianoKey linkedPianoKey = null;
@@ -186,7 +187,8 @@ public class NoteController : MonoBehaviour
         float hitWindowDistance = hitWindow * travelSpeed; // Use GameplayManager's hit window value
 
         // Make the hit window a small rectangle at the front of the note
-        hitWindowIndicator.transform.localScale = new Vector3(hitWindowDistance, 1f, 1f);
+        if (IsWindowSizeChangeEnabled())
+            hitWindowIndicator.transform.localScale = new Vector3(hitWindowDistance, 1f, 1f);
 
         // Position it at the left/front of the note
         hitWindowIndicator.transform.localPosition = Vector3.zero;
@@ -199,30 +201,32 @@ public class NoteController : MonoBehaviour
         {
             hasPassedBoard = true;
             Debug.Log($"Note {noteData.GetNoteName()} has completely passed the board");
-
-            // You can add additional logic here when the note passes the board
-            // For example, mark as missed if not hit, or trigger cleanup
         }
-
-        // if (isHit || isMissed) return;
 
         // Calculate when this note should arrive at target (with arrival offset)
         float noteArrivalTime = noteData.startTime + noteArrivalOffset;
 
-        // Calculate how much time has passed since this note should have started
-        float timeSinceNoteShouldStart = currentTime - (noteArrivalTime - travelTime);
-
-        // Calculate distance traveled
+        // Calculate the total travel distance
         float totalDistance = Vector3.Distance(startPosition, endPosition);
-        float travelSpeed = totalDistance / travelTime;
-        float distanceTraveled = timeSinceNoteShouldStart * travelSpeed;
+
+        // Use the ORIGINAL travel speed for positioning (not affected by BPM changes)
+        float originalTravelSpeed = gameplayManager != null ? gameplayManager.GetOriginalTravelSpeed() : (totalDistance / travelTime);
+
+        // Calculate when this note should start its journey using the original travel speed
+        float noteStartTime = noteArrivalTime - (totalDistance / originalTravelSpeed);
+
+        // Calculate how much time has passed since this note should have started
+        float timeSinceNoteShouldStart = currentTime - noteStartTime;
+
+        // Calculate distance traveled using the ORIGINAL travel speed (not current)
+        float distanceTraveled = timeSinceNoteShouldStart * originalTravelSpeed;
 
         // Allow notes to continue flowing past the target (no clamping)
         Vector3 direction = (endPosition - startPosition).normalized;
         transform.position = startPosition + (direction * distanceTraveled);
 
-        // Update visual length based on duration
-        UpdateNoteVisualLength(travelSpeed);
+        // Update visual length using original travel speed
+        UpdateNoteVisualLength(originalTravelSpeed);
 
         // Update hit window visual position
         UpdateHitWindowVisual();
@@ -231,8 +235,6 @@ public class NoteController : MonoBehaviour
 
         // Update mask length to show remaining time
         UpdateMaskLength(currentTime);
-
-        // Update the mask length to show remaining time
     }
 
     private void UpdateNoteVisualLength(float travelSpeed)
@@ -241,12 +243,14 @@ public class NoteController : MonoBehaviour
 
         // Calculate how long the note should be visually (in distance units)
         float noteLengthMultiplier = 1f; // You can make this configurable
-        float noteLengthInDistance = noteData.duration * travelSpeed * noteLengthMultiplier;
+
+        // Use the original travel speed for visual length calculation (not affected by BPM changes)
+        float originalTravelSpeed = gameplayManager != null ? gameplayManager.GetOriginalTravelSpeed() : travelSpeed;
+        float noteLengthInDistance = noteData.duration * originalTravelSpeed * noteLengthMultiplier;
 
         // Scale the sprite to represent the note length
         float scaleX = Mathf.Max(0.5f, noteLengthInDistance); // Minimum scale of 0.5 for better visibility
-        // spriteRenderer.transform.localScale = new Vector3(scaleX, 1f, 1f);
-        //change the spriteRenderer.drawMode.size
+
         spriteRenderer.drawMode = SpriteDrawMode.Sliced;
         spriteRenderer.size = new Vector2(scaleX, 1f);
 
@@ -433,7 +437,20 @@ public class NoteController : MonoBehaviour
             }
 
             // Scale the window based on hit window time
-            hitWindowIndicator.transform.localScale = new Vector3(hitWindowDistance, 1f, 1f);
+            if (IsWindowSizeChangeEnabled())
+                hitWindowIndicator.transform.localScale = new Vector3(hitWindowDistance, 1f, 1f);
         }
     }
+
+    public bool IsWindowSizeChangeEnabled()
+    {
+        if (gameplayManager != null && gameplayManager.settingsManager != null)
+        {
+            return gameplayManager.settingsManager.AllowWindowSizeChanges;
+        }
+        return true; // Default to true if settings not available
+    }
+
+    public bool AllowWindowSizeChanges =>
+        gameplayManager?.settingsManager?.AllowWindowSizeChanges ?? true;
 }

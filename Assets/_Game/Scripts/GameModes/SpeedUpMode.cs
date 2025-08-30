@@ -1,4 +1,8 @@
 using UnityEngine;
+using System.Collections.Generic;
+using System.Xml.Linq;
+using System.Linq;
+using System.Threading.Tasks;
 
 public class SpeedUpMode : IGameMode
 {
@@ -6,6 +10,7 @@ public class SpeedUpMode : IGameMode
 
     private GameplayManager gameplayManager;
     private AudioSource musicSource;
+    private MetronomeManager metronomeManager; // Add this
     private int beatCount = 0;
     private float originalBPM = 60f;
     private float currentBPM = 60f;
@@ -19,6 +24,12 @@ public class SpeedUpMode : IGameMode
     {
         this.gameplayManager = gameplayManager;
         this.musicSource = musicSource;
+
+        // Get metronome manager reference
+        if (gameplayManager != null)
+        {
+            this.metronomeManager = gameplayManager.metronomeManager;
+        }
     }
 
     public void Initialize()
@@ -47,21 +58,55 @@ public class SpeedUpMode : IGameMode
         {
             musicSource.Stop();
         }
+
+        // Start metronome for Speed Up mode
+        if (metronomeManager != null)
+        {
+            // Set the GameplayManager reference
+            metronomeManager.SetGameplayManager(gameplayManager);
+
+            // Sync metronome BPM from GameplayManager (don't set it directly)
+            metronomeManager.SyncBPMFromGameplayManager();
+            metronomeManager.StartMetronome();
+
+            // Sync metronome to current game time
+            if (gameplayManager != null)
+            {
+                float currentTime = gameplayManager.GetCurrentTime();
+                metronomeManager.SyncToGameTime(currentTime);
+            }
+        }
     }
 
     public void Pause()
     {
         Debug.Log("Speed Up Mode: Paused");
+        // Pause metronome
+        if (metronomeManager != null)
+        {
+            metronomeManager.StopMetronome();
+        }
     }
 
     public void Resume()
     {
         Debug.Log("Speed Up Mode: Resumed");
+        // Resume metronome
+        if (metronomeManager != null)
+        {
+            metronomeManager.StartMetronome();
+        }
     }
 
     public void End()
     {
         Debug.Log("Speed Up Mode: Ended");
+        // Stop metronome
+        if (metronomeManager != null)
+        {
+            metronomeManager.StopMetronome();
+        }
+
         // Reset BPM to original
         if (gameplayManager != null)
         {
@@ -97,16 +142,32 @@ public class SpeedUpMode : IGameMode
 
             Debug.Log($"Speed Up Mode: Beat {beatCount} hit at {currentTime:F2}s (BPM: {currentBPM})");
 
-            // Every 3 beats, increase BPM by 10
-            if (beatCount % 3 == 0)
+            // Get settings from GameplayManager
+            float bpmIncrease = 0f; // Default to 0 since you set it to 0
+            int beatsBeforeSpeedUp = 3; // Default
+
+            if (gameplayManager.settingsManager != null)
             {
-                currentBPM += 10f;
+                bpmIncrease = gameplayManager.settingsManager.BPMIncreaseAmount;
+                beatsBeforeSpeedUp = gameplayManager.settingsManager.BeatsBeforeSpeedUp;
+            }
+
+            // Every N beats, increase BPM by specified amount
+            if (beatCount % beatsBeforeSpeedUp == 0 && bpmIncrease > 0)
+            {
+                currentBPM += bpmIncrease;
                 Debug.Log($"Speed Up Mode: BPM increased to {currentBPM}");
 
-                // Update gameplay speed using the new BPM system
+                // Only update GameplayManager - metronome will sync from it
                 if (gameplayManager != null)
                 {
                     gameplayManager.SetBPM(currentBPM);
+
+                    // Sync metronome BPM from GameplayManager
+                    if (metronomeManager != null)
+                    {
+                        metronomeManager.SyncBPMFromGameplayManager();
+                    }
                 }
             }
         }
