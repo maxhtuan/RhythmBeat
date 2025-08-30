@@ -4,74 +4,78 @@ using TMPro;
 
 public class GameUIManager : MonoBehaviour
 {
-    [Header("References")]
-    public GameplayManager gameplayManager;
-
     [Header("UI Panels")]
-    public GameObject menuPanel;
+    public GameObject titlePanel;
     public GameObject gameplayPanel;
     public GameObject pausePanel;
     public GameObject gameOverPanel;
 
+    [Header("Title Screen")]
+    public Button startButton;
+    public Button settingsButton;
+    public Button quitButton;
+    public TextMeshProUGUI titleText;
+
     [Header("Gameplay UI")]
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI comboText;
+    public TextMeshProUGUI accuracyText;
     public TextMeshProUGUI timeText;
     public TextMeshProUGUI measureText;
     public TextMeshProUGUI beatText;
-    public TextMeshProUGUI txtTitle;
 
-    [Header("Title Settings")]
-    public string gameTitle = "BeatEd";
-    public string startInstruction = "Hit the first note to start!";
-    [Header("Game Over UI")]
-    public TextMeshProUGUI finalScoreText;
-    public TextMeshProUGUI accuracyText;
-    public TextMeshProUGUI gradeText;
-    public TextMeshProUGUI maxComboText;
-
-    [Header("Buttons")]
-    public Button startButton;
-    public Button pauseButton;
+    [Header("Pause Menu")]
     public Button resumeButton;
     public Button restartButton;
-    public Button quitButton;
+    public Button backToTitleButton;
 
+    [Header("Game Over")]
+    public TextMeshProUGUI finalScoreText;
+    public TextMeshProUGUI finalAccuracyText;
+    public TextMeshProUGUI gradeText;
+    public TextMeshProUGUI maxComboText;
+    public Button playAgainButton;
+    public Button backToTitleFromGameOverButton;
+
+    [Header("Settings")]
+    public string gameTitle = "BeatEd";
+    public string startInstruction = "Hit the first note to start!";
+
+    private GameplayManager gameplayManager;
+    private bool isInitialized = false;
     private bool isPlaying = false;
     private bool isPaused = false;
 
-    void Start()
-    {
-        InitializeUI();
-        SetupButtonListeners();
-    }
+    // Remove Start() method - initialization will be called from GameplayManager
 
-    void Update()
+    public void Initialize()
     {
-        UpdateGameplayUI();
-    }
+        if (isInitialized) return;
 
-    private void InitializeUI()
-    {
-        ShowPanel(menuPanel);
-        HidePanel(gameplayPanel);
-        HidePanel(pausePanel);
-        HidePanel(gameOverPanel);
-
-        // Set up the title
-        if (txtTitle != null)
+        // Find GameplayManager if not assigned
+        if (gameplayManager == null)
         {
-            txtTitle.text = $"{gameTitle}\n{startInstruction}";
+            gameplayManager = FindObjectOfType<GameplayManager>();
         }
+
+        SetupUI();
+        ShowTitleScreen();
+        isInitialized = true;
+
+        Debug.Log("GameUIManager: Initialized");
     }
 
-    private void SetupButtonListeners()
+    void SetupUI()
     {
+        // Setup button listeners
         if (startButton != null)
             startButton.onClick.AddListener(OnStartButtonClicked);
 
-        if (pauseButton != null)
-            pauseButton.onClick.AddListener(OnPauseButtonClicked);
+        if (settingsButton != null)
+            settingsButton.onClick.AddListener(OnSettingsButtonClicked);
+
+        if (quitButton != null)
+            quitButton.onClick.AddListener(OnQuitButtonClicked);
 
         if (resumeButton != null)
             resumeButton.onClick.AddListener(OnResumeButtonClicked);
@@ -79,8 +83,22 @@ public class GameUIManager : MonoBehaviour
         if (restartButton != null)
             restartButton.onClick.AddListener(OnRestartButtonClicked);
 
-        if (quitButton != null)
-            quitButton.onClick.AddListener(OnQuitButtonClicked);
+        if (backToTitleButton != null)
+            backToTitleButton.onClick.AddListener(OnBackToTitleClicked);
+
+        if (playAgainButton != null)
+            playAgainButton.onClick.AddListener(OnPlayAgainClicked);
+
+        if (backToTitleFromGameOverButton != null)
+            backToTitleFromGameOverButton.onClick.AddListener(OnBackToTitleClicked);
+    }
+
+    void Update()
+    {
+        if (isInitialized)
+        {
+            UpdateGameplayUI();
+        }
     }
 
     private void UpdateGameplayUI()
@@ -88,18 +106,18 @@ public class GameUIManager : MonoBehaviour
         if (gameplayManager == null) return;
 
         // Update title visibility based on game state
-        if (txtTitle != null)
+        if (titleText != null)
         {
             if (gameplayManager.IsPlaying)
             {
                 // Hide title when game is playing
-                txtTitle.gameObject.SetActive(false);
+                titleText.gameObject.SetActive(false);
             }
             else if (gameplayManager.IsSetupComplete && !gameplayManager.IsPlaying)
             {
                 // Show title when setup is complete but game hasn't started yet
-                txtTitle.gameObject.SetActive(true);
-                txtTitle.text = $"{gameTitle}\n{startInstruction}";
+                titleText.gameObject.SetActive(true);
+                titleText.text = $"{gameTitle}\n{startInstruction}";
             }
         }
 
@@ -151,9 +169,9 @@ public class GameUIManager : MonoBehaviour
             finalScoreText.text = "Final Score: 0";
         }
 
-        if (accuracyText != null)
+        if (finalAccuracyText != null)
         {
-            accuracyText.text = "Accuracy: 0%";
+            finalAccuracyText.text = "Accuracy: 0%";
         }
 
         if (gradeText != null)
@@ -164,6 +182,19 @@ public class GameUIManager : MonoBehaviour
         if (maxComboText != null)
         {
             maxComboText.text = "Max Combo: 0";
+        }
+    }
+
+    private void ShowTitleScreen()
+    {
+        ShowPanel(titlePanel);
+        HidePanel(gameplayPanel);
+        HidePanel(pausePanel);
+        HidePanel(gameOverPanel);
+
+        if (titleText != null)
+        {
+            titleText.text = $"{gameTitle}\n{startInstruction}";
         }
     }
 
@@ -193,6 +224,11 @@ public class GameUIManager : MonoBehaviour
             isPaused = false;
             UpdateUIForState();
         }
+    }
+
+    private void OnSettingsButtonClicked()
+    {
+        Debug.Log("Settings button clicked - implement settings menu");
     }
 
     private void OnPauseButtonClicked()
@@ -238,12 +274,34 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
+    private void OnBackToTitleClicked()
+    {
+        if (gameplayManager != null)
+        {
+            gameplayManager.RestartGame();
+            isPlaying = false;
+            isPaused = false;
+            UpdateUIForState();
+        }
+    }
+
+    private void OnPlayAgainClicked()
+    {
+        if (gameplayManager != null)
+        {
+            gameplayManager.RestartGame();
+            isPlaying = false;
+            isPaused = false;
+            UpdateUIForState();
+        }
+    }
+
     private void UpdateUIForState()
     {
         if (isPlaying && !isPaused)
         {
             // Playing state
-            HidePanel(menuPanel);
+            HidePanel(titlePanel);
             ShowPanel(gameplayPanel);
             HidePanel(pausePanel);
             HidePanel(gameOverPanel);
@@ -251,7 +309,7 @@ public class GameUIManager : MonoBehaviour
         else if (isPaused)
         {
             // Paused state
-            HidePanel(menuPanel);
+            HidePanel(titlePanel);
             HidePanel(gameplayPanel);
             ShowPanel(pausePanel);
             HidePanel(gameOverPanel);
@@ -259,10 +317,7 @@ public class GameUIManager : MonoBehaviour
         else
         {
             // Menu state
-            ShowPanel(menuPanel);
-            HidePanel(gameplayPanel);
-            HidePanel(pausePanel);
-            HidePanel(gameOverPanel);
+            ShowTitleScreen();
         }
     }
 
@@ -270,9 +325,9 @@ public class GameUIManager : MonoBehaviour
     public void OnGameStartedFromFirstHit()
     {
         // Hide the title when game starts
-        if (txtTitle != null)
+        if (titleText != null)
         {
-            txtTitle.gameObject.SetActive(false);
+            titleText.gameObject.SetActive(false);
         }
 
         // Update UI state
@@ -285,15 +340,25 @@ public class GameUIManager : MonoBehaviour
     public void OnGameRestarted()
     {
         // Show the title again when game is restarted
-        if (txtTitle != null)
+        if (titleText != null)
         {
-            txtTitle.gameObject.SetActive(true);
-            txtTitle.text = $"{gameTitle}\n{startInstruction}";
+            titleText.gameObject.SetActive(true);
+            titleText.text = $"{gameTitle}\n{startInstruction}";
         }
 
         // Update UI state
         isPlaying = false;
         isPaused = false;
         UpdateUIForState();
+    }
+
+    // Public method to show game over screen
+    public void ShowGameOver()
+    {
+        UpdateGameOverUI();
+        ShowPanel(gameOverPanel);
+        HidePanel(titlePanel);
+        HidePanel(gameplayPanel);
+        HidePanel(pausePanel);
     }
 }

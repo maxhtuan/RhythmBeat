@@ -5,34 +5,25 @@ using System.Linq;
 
 public class TimelineManager : MonoBehaviour
 {
-    [Header("Timeline Settings")]
-    public GameObject linePrefab; // Timeline line prefab
-    public float beatsPerMeasure = 4f; // 4/4 time signature
-    public float bpm = 120f; // Beats per minute
-    public Color timelineLineColor = Color.white;
-    public float timelineLineAlpha = 0.3f;
-
     [Header("References")]
     public GameplayManager gameplayManager;
     public GameBoard gameBoard;
+    public GameObject linePrefab;
 
-    // Timeline state
+    [Header("Timeline Settings")]
+    public float bpm = 60f;
+    public float timelineWidth = 10f;
+    public float timelineHeight = 2f;
+    public int linesPerBeat = 1;
+    public int beatsPerMeasure = 4; // Add missing field
+    public Color timelineLineColor = Color.white; // Add missing field
+    public float timelineLineAlpha = 0.3f; // Add missing field
+
     private List<GameObject> timelineLines = new List<GameObject>();
     private bool isInitialized = false;
     private float songDuration = 0f;
 
-    void Start()
-    {
-        // Get references if not assigned
-        if (gameplayManager == null)
-            gameplayManager = FindObjectOfType<GameplayManager>();
-
-        if (gameBoard == null)
-            gameBoard = FindObjectOfType<GameBoard>();
-
-        // Initialize timeline after a short delay to ensure GameplayManager has loaded notes
-        Invoke(nameof(InitializeTimeline), 0.1f);
-    }
+    // Remove Start() method - initialization will be called from GameplayManager
 
     void Update()
     {
@@ -40,6 +31,23 @@ public class TimelineManager : MonoBehaviour
         {
             UpdateTimelineLines();
         }
+    }
+
+    public void Initialize()
+    {
+        if (isInitialized) return;
+
+        // Get references if not assigned
+        if (gameplayManager == null)
+            gameplayManager = FindObjectOfType<GameplayManager>();
+
+        if (gameBoard == null)
+            gameBoard = FindObjectOfType<GameBoard>();
+
+        InitializeTimeline();
+        isInitialized = true;
+
+        Debug.Log("TimelineManager: Initialized");
     }
 
     public void InitializeTimeline()
@@ -59,7 +67,6 @@ public class TimelineManager : MonoBehaviour
         // Create timeline lines
         CreateTimelineLines();
 
-        isInitialized = true;
         Debug.Log($"TimelineManager initialized: BPM={bpm}, Duration={songDuration:F2}s");
     }
 

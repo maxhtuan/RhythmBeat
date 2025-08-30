@@ -19,12 +19,23 @@ public class MetronomeManager : MonoBehaviour
     private float nextBeatTime;
     private int beatCount = 0;
     private GameplayManager gameplayManager;
+    private bool isInitialized = false;
 
+    // Keep the original Start() method but make it call Initialize()
     void Start()
     {
+        Initialize();
+    }
+
+    public void Initialize()
+    {
+        if (isInitialized) return;
+
+        // Calculate seconds per beat
         secondsPerBeat = 60f / bpm;
         nextBeatTime = 0f;
 
+        // Setup audio source if not assigned
         if (metronomeAudioSource == null)
         {
             metronomeAudioSource = GetComponent<AudioSource>();
@@ -34,10 +45,14 @@ public class MetronomeManager : MonoBehaviour
             }
         }
 
+        // Set audio source properties for metronome
         metronomeAudioSource.clip = beatSound;
         metronomeAudioSource.playOnAwake = false;
         metronomeAudioSource.loop = false;
         metronomeAudioSource.volume = 0.5f;
+
+        isInitialized = true;
+        Debug.Log("MetronomeManager: Initialized");
     }
 
     void Update()

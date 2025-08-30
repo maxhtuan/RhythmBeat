@@ -15,6 +15,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     public TMPro.TextMeshProUGUI text;
     public Button button;
     public GameplayManager gameplayManager;
+    public Animator animator;
 
     [Header("Audio")]
     public AudioManager audioManager;
@@ -22,8 +23,23 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private Color originalColor;
     private bool isPressed = false;
     private NoteData linkedNote = null;
+    private bool suggestionActive = false;
+    private bool isInitialized = false;
 
-    void Start()
+    // Remove Start() method - initialization will be called from GameplayManager
+
+    public void Initialize()
+    {
+        if (isInitialized) return;
+
+        SetupPianoKey();
+        CheckIfShouldSuggest();
+        isInitialized = true;
+
+        Debug.Log($"PianoKey {noteName}: Initialized");
+    }
+
+    void SetupPianoKey()
     {
         // Get color from GameConfigs using proper Unity color parsing
         if (GameConfigs.PianoNoteColors.ContainsKey(noteName))
@@ -58,6 +74,59 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
         // Apply colors based on note
         ApplyNoteColors();
+    }
+
+    void Update()
+    {
+        // Check if we should stop the suggestion animation
+        if (suggestionActive && gameplayManager != null && !gameplayManager.isWaitingForFirstHit)
+        {
+            StopSuggestion();
+        }
+    }
+
+    private void CheckIfShouldSuggest()
+    {
+        if (gameplayManager != null && gameplayManager.notes != null && gameplayManager.notes.Count > 0)
+        {
+            // Find the first non-rest note in the song
+            NoteData firstNote = null;
+            foreach (var note in gameplayManager.notes)
+            {
+                if (!note.isRest)
+                {
+                    firstNote = note;
+                    break;
+                }
+            }
+
+            // If this key matches the first note, start suggestion
+            if (firstNote != null && IsNoteMatch(firstNote))
+            {
+                StartSuggestion();
+                Debug.Log($"Starting suggestion for {noteName} key (first note in song: {firstNote.pitch})");
+            }
+        }
+    }
+
+    public void StartSuggestion()
+    {
+        if (animator != null && !suggestionActive)
+        {
+            animator.SetTrigger("PianoKeySuggesting");
+            suggestionActive = true;
+            Debug.Log($"Started suggestion animation for {noteName} key");
+        }
+    }
+
+    public void StopSuggestion()
+    {
+        if (animator != null && suggestionActive)
+        {
+            animator.ResetTrigger("PianoKeySuggesting");
+            suggestionActive = false;
+            Debug.Log($"Stopped suggestion animation for {noteName} key");
+        }
     }
 
     private void ApplyNoteColors()
@@ -99,10 +168,21 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
         Debug.Log($"Started pressing {noteName} key");
 
+        // Stop suggestion animation when key is pressed
+        if (suggestionActive)
+        {
+            StopSuggestion();
+        }
+
         // Play piano key sound
         if (audioManager != null)
         {
+            Debug.Log($"Calling PlayPianoKeySound for {noteName}");
             audioManager.PlayPianoKeySound(noteName);
+        }
+        else
+        {
+            Debug.LogError($"AudioManager is null for {noteName} key!");
         }
 
         if (gameplayManager != null && (gameplayManager.IsPlaying || gameplayManager.IsSetupComplete))
@@ -119,8 +199,6 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             }
             else
             {
-                // gameplayManager.OnNoteHolding(this);
-
                 Debug.Log($"Pressed {noteName} but no note to hit");
             }
         }
@@ -139,7 +217,6 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         }
         else
         {
-            // //if holding
             gameplayManager.OnNoteRelease(this, null);
         }
     }

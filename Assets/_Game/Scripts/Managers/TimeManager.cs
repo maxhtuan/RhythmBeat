@@ -19,10 +19,7 @@ public class TimeManager : MonoBehaviour
     private float currentTime = 0f;
     private bool isInitialized = false;
 
-    void Start()
-    {
-        InitializeTimeManager();
-    }
+    // Remove Start() method - initialization will be called from GameplayManager
 
     void Update()
     {
@@ -30,6 +27,16 @@ public class TimeManager : MonoBehaviour
         {
             UpdateProgress();
         }
+    }
+
+    public void Initialize()
+    {
+        if (isInitialized) return;
+
+        InitializeTimeManager();
+        isInitialized = true;
+
+        Debug.Log("TimeManager: Initialized");
     }
 
     void InitializeTimeManager()
@@ -50,7 +57,6 @@ public class TimeManager : MonoBehaviour
             totalTimeText.text = FormatTime(songDuration);
         }
 
-        isInitialized = true;
         Debug.Log($"TimeManager initialized. Song duration: {songDuration:F2}s");
     }
 

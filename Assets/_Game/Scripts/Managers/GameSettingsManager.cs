@@ -2,31 +2,41 @@ using UnityEngine;
 
 public class GameSettingsManager : MonoBehaviour
 {
-    [Header("References")]
-    public GameplayManager gameplayManager;
+    [Header("Settings")]
+    public GameSettings gameSettings;
 
-    [SerializeField]
-    private GameSettings settings;
+    private GameplayManager gameplayManager;
+    private bool isInitialized = false;
 
-    void Awake()
+    // Remove Start() method - initialization will be called from GameplayManager
+
+    public void Initialize()
     {
-        // Load settings
-        settings.ValidateSettings();
+        if (isInitialized) return;
 
-        // Apply window settings
-        settings.ApplyWindowSettings();
-
-        // Apply audio settings
-        ApplyAudioSettings();
-    }
-
-    void Start()
-    {
-        // Apply gameplay settings to GameplayManager
-        if (gameplayManager != null)
+        // Find GameplayManager if not assigned
+        if (gameplayManager == null)
         {
-            ApplyGameplaySettings();
+            gameplayManager = FindObjectOfType<GameplayManager>();
         }
+
+        // Load settings if not assigned
+        if (gameSettings == null)
+        {
+            gameSettings = Resources.Load<GameSettings>("GameSettings");
+            if (gameSettings == null)
+            {
+                Debug.LogWarning("GameSettings not found in Resources, creating default settings");
+                gameSettings = ScriptableObject.CreateInstance<GameSettings>();
+            }
+        }
+
+        // Apply settings after loading
+        ApplyGameplaySettings();
+        ApplyAudioSettings();
+
+        isInitialized = true;
+        Debug.Log("GameSettingsManager: Initialized");
     }
 
     public void ApplyGameplaySettings()
@@ -34,31 +44,33 @@ public class GameSettingsManager : MonoBehaviour
         if (gameplayManager == null) return;
 
         // Apply settings to GameplayManager
-        gameplayManager.noteTravelTime = settings.defaultNoteTravelTime;
-        gameplayManager.noteSpawnOffset = settings.noteSpawnOffset;
-        gameplayManager.noteArrivalOffset = settings.noteArrivalOffset;
-        gameplayManager.hitWindow = settings.hitWindow;
+        gameplayManager.noteTravelTime = gameSettings.defaultNoteTravelTime;
+        gameplayManager.noteSpawnOffset = gameSettings.noteSpawnOffset;
+        gameplayManager.noteArrivalOffset = gameSettings.noteArrivalOffset;
+        gameplayManager.hitWindow = gameSettings.hitWindow;
 
         Debug.Log("Gameplay settings applied");
     }
 
     public void ApplyAudioSettings()
     {
+        if (gameSettings == null) return;
+
         // Apply audio settings to AudioSources
         AudioSource[] audioSources = FindObjectsOfType<AudioSource>();
         foreach (AudioSource source in audioSources)
         {
             if (source.CompareTag("Music"))
             {
-                source.volume = settings.musicVolume * settings.masterVolume;
+                source.volume = gameSettings.musicVolume * gameSettings.masterVolume;
             }
             else if (source.CompareTag("SFX"))
             {
-                source.volume = settings.sfxVolume * settings.masterVolume;
+                source.volume = gameSettings.sfxVolume * gameSettings.masterVolume;
             }
             else
             {
-                source.volume = settings.masterVolume;
+                source.volume = gameSettings.masterVolume;
             }
         }
 
@@ -67,13 +79,13 @@ public class GameSettingsManager : MonoBehaviour
 
     public void UpdateWindowSize(int width, int height)
     {
-        if (!settings.allowWindowSizeChanges) return;
+        if (gameSettings == null || !gameSettings.allowWindowSizeChanges) return;
 
         // Validate against min/max constraints
-        width = Mathf.Clamp(width, settings.minWindowWidth,
-            settings.maxWindowWidth > 0 ? settings.maxWindowWidth : width);
-        height = Mathf.Clamp(height, settings.minWindowHeight,
-            settings.maxWindowHeight > 0 ? settings.maxWindowHeight : height);
+        width = Mathf.Clamp(width, gameSettings.minWindowWidth,
+            gameSettings.maxWindowWidth > 0 ? gameSettings.maxWindowWidth : width);
+        height = Mathf.Clamp(height, gameSettings.minWindowHeight,
+            gameSettings.maxWindowHeight > 0 ? gameSettings.maxWindowHeight : height);
 
         Screen.SetResolution(width, height, Screen.fullScreen);
         Debug.Log($"Window size changed to {width}x{height}");
@@ -87,29 +99,32 @@ public class GameSettingsManager : MonoBehaviour
 
     public void SetMasterVolume(float volume)
     {
-        settings.masterVolume = Mathf.Clamp01(volume);
+        if (gameSettings == null) return;
+        gameSettings.masterVolume = Mathf.Clamp01(volume);
         ApplyAudioSettings();
     }
 
     public void SetMusicVolume(float volume)
     {
-        settings.musicVolume = Mathf.Clamp01(volume);
+        if (gameSettings == null) return;
+        gameSettings.musicVolume = Mathf.Clamp01(volume);
         ApplyAudioSettings();
     }
 
     public void SetSFXVolume(float volume)
     {
-        settings.sfxVolume = Mathf.Clamp01(volume);
+        if (gameSettings == null) return;
+        gameSettings.sfxVolume = Mathf.Clamp01(volume);
         ApplyAudioSettings();
     }
 
     // Getter methods for other scripts to access settings
-    public bool AllowWindowSizeChanges => settings.allowWindowSizeChanges;
-    public float DefaultNoteTravelTime => settings.defaultNoteTravelTime;
-    public float HitWindow => settings.hitWindow;
-    public float NoteLengthMultiplier => settings.noteLengthMultiplier;
-    public bool EnableDebugLogs => settings.enableDebugLogs;
-    public float BPMIncreaseAmount => settings.bpmIncreaseAmount;
-    public int BeatsBeforeSpeedUp => settings.beatsBeforeSpeedUp;
-    public float MaxBPM => settings.maxBPM;
+    public bool AllowWindowSizeChanges => gameSettings?.allowWindowSizeChanges ?? false;
+    public float DefaultNoteTravelTime => gameSettings?.defaultNoteTravelTime ?? 3f;
+    public float HitWindow => gameSettings?.hitWindow ?? 0.2f;
+    public float NoteLengthMultiplier => gameSettings?.noteLengthMultiplier ?? 1f;
+    public bool EnableDebugLogs => gameSettings?.enableDebugLogs ?? false;
+    public float BPMIncreaseAmount => gameSettings?.bpmIncreaseAmount ?? 10f;
+    public int BeatsBeforeSpeedUp => gameSettings?.beatsBeforeSpeedUp ?? 3;
+    public float MaxBPM => gameSettings?.maxBPM ?? 200f;
 }

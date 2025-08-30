@@ -27,10 +27,22 @@ public class GameBoard : MonoBehaviour
 
     private float laneHeight;
     private Vector3[] lanePositions;
+    private bool isInitialized = false;
 
+    // Keep the original Start() method but make it call Initialize()
     void Start()
     {
+        Initialize();
+    }
+
+    public void Initialize()
+    {
+        if (isInitialized) return;
+
         InitializeBoard();
+        isInitialized = true;
+
+        Debug.Log("GameBoard: Initialized");
     }
 
     void InitializeBoard()
@@ -96,6 +108,13 @@ public class GameBoard : MonoBehaviour
     // Get lane position for a specific note
     public Vector3 GetLanePosition(string noteName)
     {
+        // Ensure board is initialized
+        if (!isInitialized || lanePositions == null)
+        {
+            Debug.LogWarning($"GameBoard not initialized when GetLanePosition called for {noteName}. Initializing now...");
+            Initialize();
+        }
+
         int laneIndex = GetLaneIndex(noteName);
         if (laneIndex >= 0 && laneIndex < lanePositions.Length)
         {
@@ -151,7 +170,7 @@ public class GameBoard : MonoBehaviour
     // Check if board is initialized
     public bool IsInitialized()
     {
-        return lanePositions != null && lanePositions.Length > 0;
+        return isInitialized && lanePositions != null && lanePositions.Length > 0;
     }
 
     // Get board bounds

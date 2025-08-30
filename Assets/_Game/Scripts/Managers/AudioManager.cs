@@ -1,213 +1,207 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+
+[System.Serializable]
+public class PianoKeySound
+{
+    public string noteName;
+    public AudioClip sound;
+}
 
 public class AudioManager : MonoBehaviour
 {
+    [Header("Audio Sources")]
+    public AudioSource musicSource;
+    public AudioSource sfxSource;
+
     [Header("Piano Key Sounds")]
-    [SerializeField] AudioClip c4Sound;
-    [SerializeField] AudioClip d4Sound;
-    [SerializeField] AudioClip e4Sound;
-    [SerializeField] AudioClip f4Sound;
-    [SerializeField] AudioClip g4Sound;
+    public PianoKeySound[] pianoKeySoundMappings = {
+        new PianoKeySound { noteName = "C" },
+        new PianoKeySound { noteName = "D" },
+        new PianoKeySound { noteName = "E" },
+        new PianoKeySound { noteName = "F" },
+        new PianoKeySound { noteName = "G" },
+        new PianoKeySound { noteName = "A" },
+        new PianoKeySound { noteName = "B" }
+    };
 
-    [Header("Audio Settings")]
-    [SerializeField] float volume = 0.8f;
-    [SerializeField] float pitch = 1.0f;
-    [SerializeField] bool enableSound = true;
+    [Header("Other Audio Clips")]
+    public AudioClip hitSound;
+    public AudioClip missSound;
+    public AudioClip comboSound;
 
-    // Dictionary to map note names to audio clips
-    private Dictionary<string, AudioClip> noteToSoundMap = new Dictionary<string, AudioClip>();
+    [Header("Settings")]
+    public float musicVolume = 0.7f;
+    public float sfxVolume = 1f;
 
-    // Audio source for playing sounds
-    private AudioSource audioSource;
+    private Dictionary<string, AudioClip> pianoKeySoundMap = new Dictionary<string, AudioClip>();
+    private bool isInitialized = false;
 
-    void Start()
+    // Remove Start() method - initialization will be called from GameplayManager
+
+    public void Initialize()
     {
-        // Get or create AudioSource component
-        audioSource = GetComponent<AudioSource>();
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-        }
+        if (isInitialized) return;
 
-        // Configure AudioSource
-        audioSource.playOnAwake = false;
-        audioSource.volume = volume;
-        audioSource.pitch = pitch;
+        SetupAudioSources();
+        SetupPianoKeySounds();
+        isInitialized = true;
 
-        // Initialize the note-to-sound mapping
-        InitializeNoteSoundMap();
-
-        Debug.Log("AudioManager initialized with piano key sounds");
+        Debug.Log("AudioManager: Initialized");
     }
 
-    void InitializeNoteSoundMap()
+    void SetupAudioSources()
     {
-        // Clear existing mappings
-        noteToSoundMap.Clear();
-
-        // Map note names to their corresponding audio clips
-        noteToSoundMap["C4"] = c4Sound;
-        noteToSoundMap["D4"] = d4Sound;
-        noteToSoundMap["E4"] = e4Sound;
-        noteToSoundMap["F4"] = f4Sound;
-        noteToSoundMap["G4"] = g4Sound;
-
-        // Also map without octave for flexibility
-        noteToSoundMap["C"] = c4Sound;
-        noteToSoundMap["D"] = d4Sound;
-        noteToSoundMap["E"] = e4Sound;
-        noteToSoundMap["F"] = f4Sound;
-        noteToSoundMap["G"] = g4Sound;
-
-        // Log which sounds are available
-        Debug.Log("Note sound mappings:");
-        foreach (var kvp in noteToSoundMap)
+        // Setup music source if not assigned
+        if (musicSource == null)
         {
-            if (kvp.Value != null)
+            musicSource = GetComponent<AudioSource>();
+            if (musicSource == null)
             {
-                Debug.Log($"  {kvp.Key} -> {kvp.Value.name}");
+                musicSource = gameObject.AddComponent<AudioSource>();
+            }
+        }
+
+        // Setup SFX source if not assigned
+        if (sfxSource == null)
+        {
+            GameObject sfxObject = new GameObject("SFXSource");
+            sfxObject.transform.SetParent(transform);
+            sfxSource = sfxObject.AddComponent<AudioSource>();
+        }
+
+        // Set initial volumes
+        musicSource.volume = musicVolume;
+        sfxSource.volume = sfxVolume;
+    }
+
+    void SetupPianoKeySounds()
+    {
+        pianoKeySoundMap.Clear();
+
+        // Create mapping from inspector-assigned sounds
+        if (pianoKeySoundMappings != null)
+        {
+            foreach (var mapping in pianoKeySoundMappings)
+            {
+                if (mapping != null && !string.IsNullOrEmpty(mapping.noteName) && mapping.sound != null)
+                {
+                    pianoKeySoundMap[mapping.noteName] = mapping.sound;
+                    Debug.Log($"Mapped {mapping.noteName} to audio clip: {mapping.sound.name}");
+                }
+            }
+        }
+
+        Debug.Log($"AudioManager: Loaded {pianoKeySoundMap.Count} piano key sounds");
+    }
+
+    public void PlayPianoKeySound(string noteName)
+    {
+        Debug.Log($"PlayPianoKeySound called for note: {noteName}");
+
+
+
+        if (pianoKeySoundMappings.Any(mapping => mapping.noteName == noteName))
+        {
+            Debug.Log($"Found sound for {noteName}: {pianoKeySoundMappings.First(mapping => mapping.noteName == noteName).sound.name}");
+
+            if (sfxSource != null)
+            {
+                sfxSource.PlayOneShot(pianoKeySoundMappings.First(mapping => mapping.noteName == noteName).sound);
+                Debug.Log($"Playing sound for {noteName}");
             }
             else
             {
-                Debug.LogWarning($"  {kvp.Key} -> NULL (no audio clip assigned)");
-            }
-        }
-    }
-
-    // Play sound for a specific note
-    public void PlayNoteSound(string noteName)
-    {
-        if (!enableSound)
-        {
-            Debug.Log($"Sound disabled, skipping note: {noteName}");
-            return;
-        }
-
-        // Try to find the audio clip for this note
-        if (noteToSoundMap.TryGetValue(noteName, out AudioClip clip))
-        {
-            if (clip != null)
-            {
-                // Play the sound
-                audioSource.PlayOneShot(clip, volume);
-                Debug.Log($"Playing sound for note: {noteName}");
-            }
-            else
-            {
-                Debug.LogWarning($"Audio clip for note {noteName} is null!");
+                Debug.LogError("SFX AudioSource is null!");
             }
         }
         else
         {
-            Debug.LogWarning($"No audio clip found for note: {noteName}");
+            Debug.LogWarning(
+                $"No sound found for note: {noteName}. Available sounds: {string.Join(", ", pianoKeySoundMappings.Select(mapping => mapping.noteName))}");
         }
     }
 
-    // Play sound for a piano key (called from PianoKey script)
-    public void PlayPianoKeySound(string keyName)
+    public void PlayHitSound()
     {
-        PlayNoteSound(keyName);
-    }
-
-    // Play sound for a note data (called from GameplayManager)
-    public void PlayNoteDataSound(NoteData noteData)
-    {
-        if (noteData != null && !noteData.isRest)
+        if (hitSound != null && sfxSource != null)
         {
-            PlayNoteSound(noteData.pitch);
+            sfxSource.PlayOneShot(hitSound);
         }
     }
 
-    // Stop all sounds
-    public void StopAllSounds()
+    public void PlayMissSound()
     {
-        if (audioSource != null)
+        if (missSound != null && sfxSource != null)
         {
-            audioSource.Stop();
+            sfxSource.PlayOneShot(missSound);
         }
     }
 
-    // Set volume
-    public void SetVolume(float newVolume)
+    public void PlayComboSound()
     {
-        volume = Mathf.Clamp01(newVolume);
-        if (audioSource != null)
+        if (comboSound != null && sfxSource != null)
         {
-            audioSource.volume = volume;
+            sfxSource.PlayOneShot(comboSound);
         }
     }
 
-    // Set pitch
-    public void SetPitch(float newPitch)
+    public void PlayMusic(AudioClip musicClip)
     {
-        pitch = Mathf.Clamp(newPitch, 0.1f, 3.0f);
-        if (audioSource != null)
+        if (musicSource != null && musicClip != null)
         {
-            audioSource.pitch = pitch;
+            musicSource.clip = musicClip;
+            musicSource.Play();
         }
     }
 
-    // Enable/disable sound
-    public void SetSoundEnabled(bool enabled)
+    public void StopMusic()
     {
-        enableSound = enabled;
-        Debug.Log($"Sound {(enabled ? "enabled" : "disabled")}");
-    }
-
-    // Get current volume
-    public float GetVolume()
-    {
-        return volume;
-    }
-
-    // Get current pitch
-    public float GetPitch()
-    {
-        return pitch;
-    }
-
-    // Check if sound is enabled
-    public bool IsSoundEnabled()
-    {
-        return enableSound;
-    }
-
-    // Check if a note has a sound assigned
-    public bool HasNoteSound(string noteName)
-    {
-        return noteToSoundMap.ContainsKey(noteName) && noteToSoundMap[noteName] != null;
-    }
-
-    // Get all available note names
-    public List<string> GetAvailableNotes()
-    {
-        List<string> availableNotes = new List<string>();
-        foreach (var kvp in noteToSoundMap)
+        if (musicSource != null)
         {
-            if (kvp.Value != null)
-            {
-                availableNotes.Add(kvp.Key);
-            }
+            musicSource.Stop();
         }
-        return availableNotes;
     }
 
-    // Debug method to test all sounds
-    [ContextMenu("Test All Sounds")]
-    public void TestAllSounds()
+    public void PauseMusic()
     {
-        Debug.Log("Testing all piano key sounds...");
-        foreach (var kvp in noteToSoundMap)
+        if (musicSource != null)
         {
-            if (kvp.Value != null)
-            {
-                Debug.Log($"Testing sound for {kvp.Key}...");
-                audioSource.PlayOneShot(kvp.Value, volume);
-                // Wait a bit between sounds
-                System.Threading.Thread.Sleep(500);
-            }
+            musicSource.Pause();
         }
+    }
+
+    public void ResumeMusic()
+    {
+        if (musicSource != null)
+        {
+            musicSource.UnPause();
+        }
+    }
+
+    public void SetMusicVolume(float volume)
+    {
+        musicVolume = Mathf.Clamp01(volume);
+        if (musicSource != null)
+        {
+            musicSource.volume = musicVolume;
+        }
+    }
+
+    public void SetSFXVolume(float volume)
+    {
+        sfxVolume = Mathf.Clamp01(volume);
+        if (sfxSource != null)
+        {
+            sfxSource.volume = sfxVolume;
+        }
+    }
+
+    [ContextMenu("Test Play C Sound")]
+    public void TestPlayCSound()
+    {
+        PlayPianoKeySound("C");
     }
 }
 

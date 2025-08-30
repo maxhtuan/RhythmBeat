@@ -46,7 +46,7 @@ public class GameplayManager : MonoBehaviour
 
     // Game state
     private bool isPlaying = false;
-    private bool isWaitingForFirstHit = true;
+    public bool isWaitingForFirstHit = true;
     private float currentTime = 0f;
     public List<NoteData> notes = new List<NoteData>();
     private List<GameObject> activeNotes = new List<GameObject>();
@@ -79,23 +79,56 @@ public class GameplayManager : MonoBehaviour
 
     async Task SetupGameAsync()
     {
-        // Step 1: Load notes from XML
+        // Step 1: Initialize all managers first
+        InitializeAllManagers();
+        Debug.Log("All managers initialized");
+
+        // Step 2: Load notes from XML
         LoadNotes();
         Debug.Log($"Loaded {notes.Count} notes from XML");
 
-        // Step 2: Wait for GameBoard to be initialized
+        // Step 3: Wait for GameBoard to be initialized
         await WaitForGameBoardInitialization();
         Debug.Log("GameBoard initialized");
 
-        // Step 3: Initialize original travel speed
+        // Step 4: Initialize original travel speed
         InitializeOriginalTravelSpeed();
         Debug.Log($"Original travel speed initialized: {originalTravelSpeed}");
 
-        // Step 4: Pre-spawn initial notes
+        // Step 5: Pre-spawn initial notes
         PreSpawnInitialNotes();
         Debug.Log("Pre-spawned notes for first 5 seconds. Hit the first note to start!");
 
         isSetupComplete = true;
+    }
+
+    private void InitializeAllManagers()
+    {
+        Debug.Log("Starting manager initialization...");
+
+        // Only initialize managers that don't have Start() methods
+        // Managers with Start() methods will initialize themselves
+
+        // Initialize GameSettingsManager (no Start method)
+        if (settingsManager != null)
+        {
+            settingsManager.Initialize();
+        }
+
+        // Initialize GameUIManager (no Start method)
+        if (gameUIManager != null)
+        {
+            gameUIManager.Initialize();
+        }
+
+        // Initialize PianoKeys (no Start method)
+        PianoKey[] pianoKeys = FindObjectsOfType<PianoKey>();
+        foreach (var pianoKey in pianoKeys)
+        {
+            pianoKey.Initialize();
+        }
+
+        Debug.Log("Manager initialization complete!");
     }
 
     async Task WaitForGameBoardInitialization()

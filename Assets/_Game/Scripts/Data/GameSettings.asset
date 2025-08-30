@@ -18,7 +18,7 @@ MonoBehaviour:
   maxWindowWidth: 0
   maxWindowHeight: 0
   defaultNoteTravelTime: 3
-  noteSpawnOffset: 3
+  noteSpawnOffset: 6
   noteArrivalOffset: 0
   hitWindow: 0.2
   noteLengthMultiplier: 1
@@ -30,7 +30,7 @@ MonoBehaviour:
   enableMissEffects: 1
   maxActiveNotes: 50
   noteCleanupDelay: 4
-  bpmIncreaseAmount: 5
+  bpmIncreaseAmount: 0
   beatsBeforeSpeedUp: 3
   maxBPM: 0
   enableDebugLogs: 1

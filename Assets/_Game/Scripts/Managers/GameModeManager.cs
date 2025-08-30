@@ -19,11 +19,23 @@ public class GameModeManager : MonoBehaviour
 
     private IGameMode activeMode;
     private Dictionary<GameModeType, IGameMode> availableModes = new Dictionary<GameModeType, IGameMode>();
+    private bool isInitialized = false;
 
+    // Keep the original Start() method but make it call Initialize()
     void Start()
     {
+        Initialize();
+    }
+
+    public void Initialize()
+    {
+        if (isInitialized) return;
+
         InitializeModes();
         SetMode(currentMode);
+        isInitialized = true;
+
+        Debug.Log("GameModeManager: Initialized");
     }
 
     void InitializeModes()
