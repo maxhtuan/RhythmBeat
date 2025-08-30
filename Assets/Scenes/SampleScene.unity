@@ -391,7 +391,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.25}
   m_AnchorMax: {x: 1, y: 0.75}
-  m_AnchoredPosition: {x: -5, y: -0.00006628}
+  m_AnchoredPosition: {x: -5, y: -0.000066280365}
   m_SizeDelta: {x: -20, y: 9.9996}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &168379315
@@ -1028,8 +1028,8 @@ MonoBehaviour:
   targetSprite: {fileID: 1959398075}
   paddingTop: 0
   paddingBottom: 5.15
-  paddingLeft: 0
-  paddingRight: 1.57
+  paddingLeft: 2.7
+  paddingRight: 6.06
   autoAdjust: 1
   minOrthographicSize: 1
   maxOrthographicSize: 10
@@ -3043,7 +3043,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.25}
   m_AnchorMax: {x: 1, y: 0.75}
-  m_AnchoredPosition: {x: 0, y: -0.00006628}
+  m_AnchoredPosition: {x: 0, y: -0.000066280365}
   m_SizeDelta: {x: 0, y: 9.9998}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1398411312

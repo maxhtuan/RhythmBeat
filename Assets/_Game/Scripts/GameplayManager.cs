@@ -97,9 +97,20 @@ public class GameplayManager : MonoBehaviour
 
         // Step 5: Pre-spawn initial notes
         PreSpawnInitialNotes();
+
+        SetupAllPianoKeys();
         Debug.Log("Pre-spawned notes for first 5 seconds. Hit the first note to start!");
 
         isSetupComplete = true;
+    }
+
+    private void SetupAllPianoKeys()
+    {
+        PianoKey[] pianoKeys = FindObjectsOfType<PianoKey>();
+        foreach (var pianoKey in pianoKeys)
+        {
+            pianoKey.Initialize();
+        }
     }
 
     private void InitializeAllManagers()
@@ -119,13 +130,6 @@ public class GameplayManager : MonoBehaviour
         if (gameUIManager != null)
         {
             gameUIManager.Initialize();
-        }
-
-        // Initialize PianoKeys (no Start method)
-        PianoKey[] pianoKeys = FindObjectsOfType<PianoKey>();
-        foreach (var pianoKey in pianoKeys)
-        {
-            pianoKey.Initialize();
         }
 
         Debug.Log("Manager initialization complete!");

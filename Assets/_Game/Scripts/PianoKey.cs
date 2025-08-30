@@ -113,7 +113,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
         if (animator != null && !suggestionActive)
         {
-            animator.SetTrigger("PianoKeySuggesting");
+            animator.SetBool("PianoKeySuggesting", true);
             suggestionActive = true;
             Debug.Log($"Started suggestion animation for {noteName} key");
         }
@@ -123,7 +123,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
         if (animator != null && suggestionActive)
         {
-            animator.ResetTrigger("PianoKeySuggesting");
+            animator.SetBool("PianoKeySuggesting", false);
             suggestionActive = false;
             Debug.Log($"Stopped suggestion animation for {noteName} key");
         }
@@ -174,6 +174,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             StopSuggestion();
         }
 
+        animator.SetBool("PianoKeyHit", true);
         // Play piano key sound
         if (audioManager != null)
         {
@@ -219,6 +220,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         {
             gameplayManager.OnNoteRelease(this, null);
         }
+        animator.SetBool("PianoKeyHit", false);
     }
 
     private NoteData FindClosestNote()
