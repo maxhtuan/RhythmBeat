@@ -19,7 +19,10 @@ public class TimeManager : MonoBehaviour
     private float currentTime = 0f;
     private bool isInitialized = false;
 
-    // Remove Start() method - initialization will be called from GameplayManager
+    void Start()
+    {
+        Initialize();
+    }
 
     void Update()
     {
@@ -49,12 +52,19 @@ public class TimeManager : MonoBehaviour
         {
             progressSlider.minValue = 0f;
             progressSlider.maxValue = songDuration;
-            progressSlider.value = 0f;
+            progressSlider.value = 0f; // Set slider to 0 by default
+            Debug.Log($"Slider initialized: min=0, max={songDuration}, value=0");
         }
 
         if (totalTimeText != null && showTotalTimeText)
         {
             totalTimeText.text = FormatTime(songDuration);
+        }
+
+        // Initialize time text to 0
+        if (timeText != null && showTimeText)
+        {
+            timeText.text = FormatTime(0f);
         }
 
         Debug.Log($"TimeManager initialized. Song duration: {songDuration:F2}s");
@@ -169,6 +179,19 @@ public class TimeManager : MonoBehaviour
     public void Reset()
     {
         currentTime = 0f;
-        UpdateProgress();
+
+        // Reset slider to 0
+        if (progressSlider != null)
+        {
+            progressSlider.value = 0f;
+        }
+
+        // Reset time text to 0
+        if (timeText != null && showTimeText)
+        {
+            timeText.text = FormatTime(0f);
+        }
+
+        Debug.Log("TimeManager reset to 0");
     }
 }

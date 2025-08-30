@@ -368,9 +368,10 @@ public class NoteController : MonoBehaviour
     {
         // Add particle effect or animation for hit
         // You can implement this based on your visual needs
-        spriteRenderer.color = new Color(spriteRenderer.color.r, spriteRenderer.color.g, spriteRenderer.color.b, 0.3f);
-        spriteDecorRenderer.color = new Color(spriteDecorRenderer.color.r, spriteDecorRenderer.color.g, spriteDecorRenderer.color.b, 0.3f);
-        noteNameText.color = new Color(noteNameText.color.r, noteNameText.color.g, noteNameText.color.b, 0.3f);
+        float alpha = 0.15f;
+        spriteRenderer.color = new Color(spriteRenderer.color.r, spriteRenderer.color.g, spriteRenderer.color.b, alpha);
+        spriteDecorRenderer.color = new Color(spriteDecorRenderer.color.r, spriteDecorRenderer.color.g, spriteDecorRenderer.color.b, alpha);
+        noteNameText.color = new Color(noteNameText.color.r, noteNameText.color.g, noteNameText.color.b, alpha);
 
         if (hitEffect != null)
         {

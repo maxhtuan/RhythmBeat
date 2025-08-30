@@ -104,11 +104,16 @@ public class AudioManager : MonoBehaviour
 
         if (pianoKeySoundMappings.Any(mapping => mapping.noteName == noteName))
         {
-            Debug.Log($"Found sound for {noteName}: {pianoKeySoundMappings.First(mapping => mapping.noteName == noteName).sound.name}");
+            var sound = pianoKeySoundMappings.First(mapping => mapping.noteName == noteName);
+
+            if (sound == null) return;
+            if (sound.sound == null) return;
+
+            Debug.Log($"Found sound for {noteName}: {sound.sound.name}");
 
             if (sfxSource != null)
             {
-                sfxSource.PlayOneShot(pianoKeySoundMappings.First(mapping => mapping.noteName == noteName).sound);
+                sfxSource.PlayOneShot(sound.sound);
                 Debug.Log($"Playing sound for {noteName}");
             }
             else
