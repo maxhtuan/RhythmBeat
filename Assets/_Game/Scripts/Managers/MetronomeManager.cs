@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-public class MetronomeManager : MonoBehaviour
+public class MetronomeManager : MonoBehaviour, IService
 {
     [Header("Metronome Settings")]
     public AudioSource metronomeAudioSource;
@@ -30,6 +30,7 @@ public class MetronomeManager : MonoBehaviour
     public void Initialize()
     {
         if (isInitialized) return;
+        gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
 
         // Calculate seconds per beat
         secondsPerBeat = 60f / bpm;
@@ -70,11 +71,6 @@ public class MetronomeManager : MonoBehaviour
 
             Debug.Log($"Metronome beat {beatCount} scheduled for {nextBeatTime:F2}s");
         }
-    }
-
-    public void SetGameplayManager(GameplayManager manager)
-    {
-        gameplayManager = manager;
     }
 
     public void StartMetronome()
@@ -206,5 +202,14 @@ public class MetronomeManager : MonoBehaviour
         float currentGameTime = gameplayManager != null ? gameplayManager.GetCurrentTime() : 0f;
         float timeToNextBeat = nextBeatTime - currentGameTime;
         return timeToNextBeat <= tolerance;
+    }
+
+    public void Cleanup()
+    {
+        isPlaying = false;
+        beatCount = 0;
+        nextBeatTime = 0f;
+        isInitialized = false;
+        Debug.Log("MetronomeManager cleaned up");
     }
 }

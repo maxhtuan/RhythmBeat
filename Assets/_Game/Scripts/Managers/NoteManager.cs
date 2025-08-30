@@ -163,4 +163,14 @@ public class NoteManager
         // You can add visual/audio feedback here
         Debug.Log($"Note missed: {note.pitch} at time {note.startTime}");
     }
+
+    public void Cleanup()
+    {
+        ClearAllNotes();
+        currentSong = null;
+        spawnPoint = null;
+        targetPoint = null;
+        notePrefab = null;
+        Debug.Log("NoteManager cleaned up");
+    }
 }

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GameSettingsManager : MonoBehaviour
+public class GameSettingsManager : MonoBehaviour, IService
 {
     [Header("Settings")]
     public GameSettings gameSettings;
@@ -127,4 +127,10 @@ public class GameSettingsManager : MonoBehaviour
     public float BPMIncreaseAmount => gameSettings?.bpmIncreaseAmount ?? 10f;
     public int BeatsBeforeSpeedUp => gameSettings?.beatsBeforeSpeedUp ?? 3;
     public float MaxBPM => gameSettings?.maxBPM ?? 200f;
+
+    public void Cleanup()
+    {
+        isInitialized = false;
+        Debug.Log("GameSettingsManager cleaned up");
+    }
 }

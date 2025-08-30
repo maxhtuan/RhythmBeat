@@ -21,7 +21,7 @@ public class PracticeMode : IGameMode
         }
     }
 
-    public void Start()
+    public void TriggerThisMode()
     {
         Debug.Log("Practice Mode: Started");
         // No background music in practice mode

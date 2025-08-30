@@ -50,7 +50,7 @@ public class SpeedUpMode : IGameMode
         Debug.Log($"Speed Up Mode: Original BPM = {originalBPM}, Seconds per beat = {secondsPerBeat:F2}");
     }
 
-    public void Start()
+    public void TriggerThisMode()
     {
         Debug.Log("Speed Up Mode: Started");
         // Don't play background music, only beat sounds
@@ -62,9 +62,6 @@ public class SpeedUpMode : IGameMode
         // Start metronome for Speed Up mode
         if (metronomeManager != null)
         {
-            // Set the GameplayManager reference
-            metronomeManager.SetGameplayManager(gameplayManager);
-
             // Sync metronome BPM from GameplayManager (don't set it directly)
             metronomeManager.SyncBPMFromGameplayManager();
             metronomeManager.StartMetronome();

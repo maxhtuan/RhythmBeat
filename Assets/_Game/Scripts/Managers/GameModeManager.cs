@@ -8,7 +8,7 @@ public enum GameModeType
     SpeedUp
 }
 
-public class GameModeManager : MonoBehaviour
+public class GameModeManager : MonoBehaviour, IService
 {
     [Header("References")]
     public GameplayManager gameplayManager;
@@ -30,6 +30,8 @@ public class GameModeManager : MonoBehaviour
     public void Initialize()
     {
         if (isInitialized) return;
+
+        gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
 
         InitializeModes();
         SetMode(currentMode);
@@ -71,7 +73,7 @@ public class GameModeManager : MonoBehaviour
 
     public void StartMode()
     {
-        activeMode?.Start();
+        activeMode?.TriggerThisMode();
     }
 
     public void PauseMode()
@@ -122,5 +124,13 @@ public class GameModeManager : MonoBehaviour
     public void SwitchToSpeedUp()
     {
         SetMode(GameModeType.SpeedUp);
+    }
+
+    public void Cleanup()
+    {
+        activeMode?.End();
+        availableModes.Clear();
+        isInitialized = false;
+        Debug.Log("GameModeManager cleaned up");
     }
 }

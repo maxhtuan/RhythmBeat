@@ -2,7 +2,7 @@ public interface IGameMode
 {
     string ModeName { get; }
     void Initialize();
-    void Start();
+    void TriggerThisMode();
     void Pause();
     void Resume();
     void End();

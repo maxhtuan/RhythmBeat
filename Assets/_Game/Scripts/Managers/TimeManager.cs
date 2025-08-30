@@ -4,7 +4,7 @@ using TMPro;
 using System.Xml.Linq;
 using System.Linq;
 
-public class TimeManager : MonoBehaviour
+public class TimeManager : MonoBehaviour, IService
 {
     [Header("UI References")]
     public Slider progressSlider;
@@ -193,5 +193,13 @@ public class TimeManager : MonoBehaviour
         }
 
         Debug.Log("TimeManager reset to 0");
+    }
+
+    public void Cleanup()
+    {
+        currentTime = 0f;
+        songDuration = 0f;
+        isInitialized = false;
+        Debug.Log("TimeManager cleaned up");
     }
 }

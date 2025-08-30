@@ -18,7 +18,7 @@ public class PerformMode : IGameMode
         Debug.Log("Perform Mode: Initialized");
     }
 
-    public void Start()
+    public void TriggerThisMode()
     {
         Debug.Log("Perform Mode: Started");
         if (musicSource != null && musicSource.clip != null)

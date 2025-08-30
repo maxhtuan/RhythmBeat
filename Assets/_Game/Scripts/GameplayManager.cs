@@ -4,7 +4,7 @@ using System.Xml.Linq;
 using System.Linq;
 using System.Threading.Tasks;
 
-public class GameplayManager : MonoBehaviour
+public class GameplayManager : MonoBehaviour, IService
 {
     [Header("Basic Settings")]
     public GameBoard gameBoard; // Assign your GameBoard component here
@@ -68,6 +68,11 @@ public class GameplayManager : MonoBehaviour
     [Header("Metronome")]
     public MetronomeManager metronomeManager;
 
+    // Service Locator references
+    private GameStateManager gameStateManager;
+    private AudioManager audioManager;
+    private ScoreManager scoreManager;
+
     // Make it public so SpeedUpMode can access it
 
     async void Start()
@@ -113,24 +118,31 @@ public class GameplayManager : MonoBehaviour
         }
     }
 
-    private void InitializeAllManagers()
+    private async Task InitializeAllManagers()
     {
         Debug.Log("Starting manager initialization...");
 
-        // Only initialize managers that don't have Start() methods
-        // Managers with Start() methods will initialize themselves
+        // Get all managers from Service Locator
+        gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
+        audioManager = ServiceLocator.Instance.GetService<AudioManager>();
+        timeManager = ServiceLocator.Instance.GetService<TimeManager>();
+        gameModeManager = ServiceLocator.Instance.GetService<GameModeManager>();
+        settingsManager = ServiceLocator.Instance.GetService<GameSettingsManager>();
+        metronomeManager = ServiceLocator.Instance.GetService<MetronomeManager>();
+        scoreManager = ServiceLocator.Instance.GetService<ScoreManager>();
 
-        // Initialize GameSettingsManager (no Start method)
-        if (settingsManager != null)
-        {
-            settingsManager.Initialize();
-        }
+        // await WaitUntil.serviceIsInitialized<GameStateManager>();
 
-        // Initialize GameUIManager (no Start method)
-        if (gameUIManager != null)
-        {
-            gameUIManager.Initialize();
-        }
+        // Initialize managers that need manual initialization
+        // if (settingsManager != null)
+        // {
+        //     settingsManager.Initialize();
+        // }
+
+        // if (gameUIManager != null)
+        // {
+        //     gameUIManager.Initialize();
+        // }
 
         Debug.Log("Manager initialization complete!");
     }
@@ -804,5 +816,15 @@ public class GameplayManager : MonoBehaviour
             float totalDistance = Vector3.Distance(spawnPos, targetPos);
             originalTravelSpeed = totalDistance / noteTravelTime; // Use the current noteTravelTime
         }
+    }
+
+    public void Initialize()
+    {
+        Debug.Log("GameplayManager: Initialized");
+    }
+
+    public void Cleanup()
+    {
+        Debug.Log("GameplayManager: Cleaned up");
     }
 }

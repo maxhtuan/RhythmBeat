@@ -9,7 +9,7 @@ public class PianoKeySound
     public AudioClip sound;
 }
 
-public class AudioManager : MonoBehaviour
+public class AudioManager : MonoBehaviour, IService
 {
     [Header("Audio Sources")]
     public AudioSource musicSource;
@@ -207,6 +207,21 @@ public class AudioManager : MonoBehaviour
     public void TestPlayCSound()
     {
         PlayPianoKeySound("C");
+    }
+
+    public void Cleanup()
+    {
+        if (musicSource != null)
+        {
+            musicSource.Stop();
+        }
+        if (sfxSource != null)
+        {
+            sfxSource.Stop();
+        }
+        pianoKeySoundMap.Clear();
+        isInitialized = false;
+        Debug.Log("AudioManager cleaned up");
     }
 }
 
