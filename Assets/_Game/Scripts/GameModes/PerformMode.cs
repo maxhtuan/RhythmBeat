@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class PerformMode : IGameMode
@@ -54,8 +55,14 @@ public class PerformMode : IGameMode
         }
     }
 
-    public void OnBeatHit()
+    public Task OnBeatHit()
     {
         // Perform mode doesn't need to do anything special on beat hit
+        return Task.CompletedTask;
+    }
+
+    public void OnNoteMissed()
+    {
+        // Perform mode doesn't need to do anything special on note missed
     }
 }

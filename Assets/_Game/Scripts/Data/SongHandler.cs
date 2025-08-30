@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class SongHandler : MonoBehaviour, IService
 {
@@ -11,6 +12,16 @@ public class SongHandler : MonoBehaviour, IService
     public float noteSpawnOffset = 3f; // How many seconds before hit time to spawn notes
     public float noteTravelTime = 3f; // How long notes take to travel from spawn to target
     public float noteArrivalOffset = 0f; // How many seconds before hit time notes should arrive (negative = early, positive = late)
+
+    [Header("Test UI")]
+    [SerializeField] private Slider bpmTestSlider; // Test slider for real-time BPM changes (hidden for now)
+    [SerializeField] private TMPro.TextMeshProUGUI bpmDisplayText; // Display current BPM (hidden for now)
+    public float minBPM = 30f; // Minimum BPM for slider
+    public float maxBPM = 200f; // Maximum BPM for slider
+
+    [Header("BPM Increase Settings")]
+    public float bpmIncreaseAmount = 5f; // How much BPM increases per note hit
+    public float maxBPMLimit = 200f; // Maximum BPM limit
 
     // Store the original travel speed for consistent visual length
     private float originalTravelSpeed = 0f;
@@ -52,6 +63,22 @@ public class SongHandler : MonoBehaviour, IService
         noteTravelTime = 3f;
 
         Debug.Log($"BPM reset to original: {originalBPM}");
+    }
+
+    public void IncreaseBPMOnNoteHit()
+    {
+        float newBPM = currentBPM + bpmIncreaseAmount;
+
+        // Check if we're within the max BPM limit
+        if (newBPM <= maxBPMLimit)
+        {
+            SetBPM(newBPM);
+            Debug.Log($"BPM increased to {newBPM} after note hit");
+        }
+        else
+        {
+            Debug.Log($"BPM at maximum limit: {maxBPMLimit}");
+        }
     }
 
     public float GetSpeedUpMultiplier()
@@ -106,8 +133,37 @@ public class SongHandler : MonoBehaviour, IService
     public void Initialize()
     {
         gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
+        SetupTestUI();
         Debug.Log("SongHandler: Initialized");
     }
+
+    private void SetupTestUI()
+    {
+        // Hide the test UI for now
+        if (bpmTestSlider != null)
+        {
+            bpmTestSlider.gameObject.SetActive(false);
+        }
+
+        if (bpmDisplayText != null)
+        {
+            bpmDisplayText.gameObject.SetActive(false);
+        }
+    }
+    public void OnAddBPM(float addBPM)
+    {
+        SetBPM(currentBPM + addBPM);
+
+        // Notify metronome of BPM change
+        var metronomeManager = ServiceLocator.Instance.GetService<MetronomeManager>();
+        if (metronomeManager != null)
+        {
+            metronomeManager.SyncBPMFromGameplayManager();
+        }
+    }
+    // Note: Slider methods are disabled since UI is hidden
+    // private void OnBPMSliderChanged(float newBPM) { }
+    // private void UpdateBPMDisplay() { }
 
     public void Cleanup()
     {

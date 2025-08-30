@@ -16,9 +16,14 @@ public class PianoInputHandler : MonoBehaviour
 
     private Dictionary<KeyCode, int> keyToNoteMap = new Dictionary<KeyCode, int>();
     private Dictionary<KeyCode, bool> keyPressed = new Dictionary<KeyCode, bool>();
-
+    public NoteManager noteManager;
     void Start()
     {
+        if (noteManager == null)
+        {
+            noteManager = ServiceLocator.Instance.GetService<NoteManager>();
+        }
+
         InitializeKeyMappings();
     }
 
@@ -94,11 +99,14 @@ public class PianoInputHandler : MonoBehaviour
         NoteData closestNote = null;
         float closestTime = float.MaxValue;
 
-        foreach (var note in gameplayManager.notes)
+        foreach (var note in noteManager.GetAllNotes())
         {
             if (note.isRest) continue;
 
-            float timeDiff = Mathf.Abs(note.startTime - currentTime);
+            // Use position-based timing instead of startTime
+            float noteArrivalTime = GetNoteArrivalTime(note);
+            float timeDiff = Mathf.Abs(noteArrivalTime - currentTime);
+
             if (timeDiff <= hitWindow && timeDiff < closestTime)
             {
                 // Check if the note matches the pressed key
@@ -111,6 +119,21 @@ public class PianoInputHandler : MonoBehaviour
         }
 
         return closestNote;
+    }
+
+    private float GetNoteArrivalTime(NoteData note)
+    {
+        // Get SongHandler to calculate position-based arrival time
+        var songHandler = ServiceLocator.Instance.GetService<SongHandler>();
+        if (songHandler != null)
+        {
+            // Calculate position-based arrival time
+            float beatDuration = 60f / songHandler.GetCurrentBPM();
+            return note.notePosition * beatDuration;
+        }
+
+        // Fallback to original startTime if SongHandler not available
+        return note.startTime;
     }
 
     private bool IsNoteMatch(NoteData note, int noteIndex)
@@ -129,7 +152,8 @@ public class PianoInputHandler : MonoBehaviour
         if (gameplayManager == null) return 0f;
 
         float currentTime = gameplayManager.GetCurrentTime();
-        float timeDiff = Mathf.Abs(note.startTime - currentTime);
+        float noteArrivalTime = GetNoteArrivalTime(note);
+        float timeDiff = Mathf.Abs(noteArrivalTime - currentTime);
         float hitWindow = gameplayManager.hitWindow;
 
         // Calculate accuracy based on timing

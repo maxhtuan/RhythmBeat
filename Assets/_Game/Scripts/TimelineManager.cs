@@ -32,7 +32,7 @@ public class TimelineManager : MonoBehaviour
             UpdateTimelineLines();
         }
     }
-
+    public NoteManager noteManager;
     public void Initialize()
     {
         if (isInitialized) return;
@@ -44,7 +44,8 @@ public class TimelineManager : MonoBehaviour
             songHandler = ServiceLocator.Instance.GetService<SongHandler>();
         if (gameBoard == null)
             gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
-
+        if (noteManager == null)
+            noteManager = ServiceLocator.Instance.GetService<NoteManager>();
         InitializeTimeline();
         isInitialized = true;
 
@@ -104,12 +105,15 @@ public class TimelineManager : MonoBehaviour
         }
     }
 
+
+    List<NoteData> notes => noteManager.GetAllNotes();
+
     void CalculateSongDuration()
     {
-        if (gameplayManager.notes.Count > 0)
+        if (notes.Count > 0)
         {
-            NoteData firstNote = gameplayManager.notes[0];
-            NoteData lastNote = gameplayManager.notes[gameplayManager.notes.Count - 1];
+            NoteData firstNote = notes[0];
+            NoteData lastNote = notes[notes.Count - 1];
 
             // Calculate song duration from first note to last note
             float firstBeatTime = firstNote.startTime;
@@ -129,13 +133,13 @@ public class TimelineManager : MonoBehaviour
         // Clear existing lines
         ClearTimelineLines();
 
-        if (gameplayManager.notes.Count == 0) return;
+        if (notes.Count == 0) return;
 
         float secondsPerBeat = 60f / bpm;
         float secondsPerMeasure = secondsPerBeat * beatsPerMeasure;
 
         // Get the first note time to align timeline with music
-        float firstNoteTime = gameplayManager.notes[0].startTime;
+        float firstNoteTime = notes[0].startTime;
 
         // Calculate how many measures we need
         int totalMeasures = Mathf.CeilToInt(songDuration / secondsPerMeasure);
@@ -202,10 +206,10 @@ public class TimelineManager : MonoBehaviour
     {
         float currentTime = gameplayManager.GetCurrentTime();
 
-        if (gameplayManager.notes.Count == 0) return;
+        if (notes.Count == 0) return;
 
         // Get the first note time to align timeline with music
-        float firstNoteTime = gameplayManager.notes[0].startTime;
+        float firstNoteTime = notes[0].startTime;
 
         for (int i = 0; i < timelineLines.Count; i++)
         {

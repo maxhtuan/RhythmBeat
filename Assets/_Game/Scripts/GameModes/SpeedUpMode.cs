@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Xml.Linq;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
+using DG.Tweening;
 
 public class SpeedUpMode : IGameMode
 {
@@ -16,6 +18,7 @@ public class SpeedUpMode : IGameMode
     private int beatCount = 0;
     private float originalBPM = 60f;
     private float currentBPM = 60f;
+    private int currentPatternStartPosition = 0; // Track which pattern we're in
 
     // Beat tracking
     private float lastBeatTime = 0f;
@@ -40,6 +43,7 @@ public class SpeedUpMode : IGameMode
 
         beatCount = 0;
         hasHitFirstNote = false;
+        currentPatternStartPosition = 0;
 
         // Get the original BPM from GameplayManager
         if (songHandler != null)
@@ -55,6 +59,8 @@ public class SpeedUpMode : IGameMode
 
     public void TriggerThisMode()
     {
+        isFirstHit = true;
+        hitCount = 0;
         Debug.Log("Speed Up Mode: Started");
         // Don't play background music, only beat sounds
         if (musicSource != null)
@@ -101,6 +107,8 @@ public class SpeedUpMode : IGameMode
     public void End()
     {
         Debug.Log("Speed Up Mode: Ended");
+        hitCount = 0;
+
         // Stop metronome
         if (metronomeManager != null)
         {
@@ -112,69 +120,153 @@ public class SpeedUpMode : IGameMode
         {
             gameplayManager.ResetBPM();
         }
+
+        // Clear all notes from NoteManager
+        var noteManager = ServiceLocator.Instance.GetService<NoteManager>();
+        if (noteManager != null)
+        {
+            noteManager.ClearAllNotes();
+            Debug.Log("Speed Up Mode: Cleared all notes");
+        }
+
         beatCount = 0;
         hasHitFirstNote = false;
+        currentPatternStartPosition = 0;
     }
 
-    public void OnBeatHit()
+    public async Task OnBeatHit()
     {
         if (gameplayManager == null) return;
 
-        float currentTime = gameplayManager.GetCurrentTime();
+        Debug.Log("Speed Up Mode: Beat Hit");
 
-        // Only count beats if we've hit the first note and started the game
-        if (!hasHitFirstNote)
+        if (isFirstHit)
         {
-            hasHitFirstNote = true;
-            lastBeatTime = currentTime;
+            isFirstHit = false;
+            Debug.Log("Speed Up Mode: First Hit");
             return;
         }
 
-        // Check if enough time has passed since the last beat
-        float timeSinceLastBeat = currentTime - lastBeatTime;
-        float currentSecondsPerBeat = 60f / currentBPM;
-
-        // Only count this as a beat if we're close to the expected beat time
-        if (timeSinceLastBeat >= currentSecondsPerBeat * 0.8f) // Allow some tolerance
+        // Get current note position from NoteManager
+        var noteManager = ServiceLocator.Instance.GetService<NoteManager>();
+        if (noteManager != null)
         {
-            beatCount++;
-            lastBeatTime = currentTime;
-
-            Debug.Log($"Speed Up Mode: Beat {beatCount} hit at {currentTime:F2}s (BPM: {currentBPM})");
-
-            // Get settings from GameplayManager
-            float bpmIncrease = 0f; // Default to 0 since you set it to 0
-            int beatsBeforeSpeedUp = 3; // Default
-
-            if (settingsManager != null)
+            var currentNote = GetCurrentNoteFromPosition();
+            if (currentNote != null)
             {
-                bpmIncrease = settingsManager.BPMIncreaseAmount;
-                beatsBeforeSpeedUp = settingsManager.BeatsBeforeSpeedUp;
+                // Check if this is the start of a new pattern
+                if (IsPatternStart(currentNote.notePosition))
+                {
+                    Debug.Log($"Speed Up Mode: New Pattern Started at position {currentNote.notePosition}");
+                    currentPatternStartPosition = currentNote.notePosition;
+                    hitCount = 0; // Reset hit count for new pattern
+                }
+
+
             }
-
-            // Every N beats, increase BPM by specified amount
-            // if (beatCount % beatsBeforeSpeedUp == 0 && bpmIncrease > 0)
-            // {
-            //     currentBPM += bpmIncrease;
-            //     Debug.Log($"Speed Up Mode: BPM increased to {currentBPM}");
-
-            //     // Only update GameplayManager - metronome will sync from it
-            //     if (songHandler != null)
-            //     {
-            //         songHandler.SetBPM(currentBPM);
-
-            //         // Sync metronome BPM from GameplayManager
-            //         if (metronomeManager != null)
-            //         {
-            //             metronomeManager.SyncBPMFromGameplayManager();
-            //         }
-            //     }
-            // }
         }
-        else
+
+        // Count this note hit
+        hitCount++;
+        Debug.Log("Speed Up Mode: Hit Count: " + hitCount);
+
+        // Check if we've completed a full pattern (6 notes)
+        if (hitCount >= 6)
         {
-            // This is likely a note release or extra hit, not a beat
-            Debug.Log($"Ignoring extra hit at {currentTime:F2}s (time since last beat: {timeSinceLastBeat:F2}s, expected: {currentSecondsPerBeat:F2}s)");
+            await OnPatternComplete();
         }
     }
+
+    bool isFirstHit = true;
+
+    int hitCount = 0;
+
+    // Method to reset pattern count when player misses notes
+    public void OnNoteMissed()
+    {
+        // Reset hit count if player misses a note in the current pattern
+        if (hitCount > 0)
+        {
+            Debug.Log("Speed Up Mode: Note Missed - Resetting Pattern Count");
+            hitCount = 0;
+        }
+    }
+
+    // Method to check if current pattern is complete
+    public bool IsPatternComplete()
+    {
+        return hitCount >= 6;
+    }
+
+    // Method to handle pattern completion (called when all 6 notes are hit)
+    public async Task OnPatternComplete()
+    {
+        Debug.Log("Speed Up Mode: Pattern Complete - Adding BPM");
+
+        // Wait exactly 1 beat duration based on current BPM
+        float beatDuration = 60f / songHandler.GetCurrentBPM();
+        int delayMs = Mathf.RoundToInt(beatDuration * 1000f);
+        await Task.Delay(delayMs);
+
+        var gameUIManager = ServiceLocator.Instance.GetService<GameUIManager>();
+        gameUIManager.OnSpeedUpTriggered();
+
+        // Smooth BPM increase
+        var curBMP = songHandler.GetCurrentBPM();
+        var original = songHandler.GetCurrentBPM();
+        DOTween.To(() => curBMP, x =>
+        {
+            songHandler.OnAddBPM(x - original);
+            original = songHandler.GetCurrentBPM();
+        }, curBMP + 5f, 1f).OnComplete(() =>
+        {
+        });
+
+        // Reset hit count for next pattern
+        hitCount = 0;
+    }
+
+    // Get the current note based on position
+    private NoteData GetCurrentNoteFromPosition()
+    {
+        var noteManager = ServiceLocator.Instance.GetService<NoteManager>();
+        if (noteManager != null)
+        {
+            var notes = noteManager.GetAllNotes();
+            var gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
+            if (gameplayManager != null)
+            {
+                float currentTime = gameplayManager.GetCurrentTime();
+                float beatDuration = 60f / songHandler.GetCurrentBPM();
+                float currentPosition = currentTime / beatDuration;
+
+                // Find the note closest to current position
+                foreach (var note in notes)
+                {
+                    if (Mathf.Abs(note.notePosition - currentPosition) < 0.5f)
+                    {
+                        return note;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    // Check if this position is the start of a pattern
+    private bool IsPatternStart(int notePosition)
+    {
+        // Pattern starts at positions: 1, 5, 13, 21, 29, 37, 45, 53, 61, 69
+        // (Each pattern is 8 positions: 4 initial + 8 repeated + 4 gap)
+        return
+               notePosition == 4 ||
+               notePosition == 16 ||
+               notePosition == 28 ||
+               notePosition == 40 ||
+               notePosition == 52 ||
+               notePosition == 64 ||
+               notePosition == 76;
+    }
+
+
 }

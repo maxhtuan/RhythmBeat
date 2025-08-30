@@ -26,6 +26,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private NoteData linkedNote = null;
     private bool suggestionActive = false;
     private bool isInitialized = false;
+    public NoteManager noteManager;
 
     // Remove Start() method - initialization will be called from GameplayManager
 
@@ -49,6 +50,11 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (gameStateManager == null)
         {
             gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
+        }
+
+        if (noteManager == null)
+        {
+            noteManager = ServiceLocator.Instance.GetService<NoteManager>();
         }
 
         gameStateManager.SubcribeToGameStateChanged((gameState) =>
@@ -105,11 +111,11 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     private void CheckIfShouldSuggest()
     {
-        if (gameplayManager != null && gameplayManager.notes != null && gameplayManager.notes.Count > 0)
+        if (gameplayManager != null && noteManager != null && noteManager.GetAllNotes() != null && noteManager.GetAllNotes().Count > 0)
         {
             // Find the first non-rest note in the song
             NoteData firstNote = null;
-            foreach (var note in gameplayManager.notes)
+            foreach (var note in noteManager.GetAllNotes())
             {
                 if (!note.isRest)
                 {
@@ -251,11 +257,14 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         NoteData closestNote = null;
         float closestTime = float.MaxValue;
 
-        foreach (var note in gameplayManager.notes)
+        foreach (var note in noteManager.GetAllNotes())
         {
             if (note.isRest) continue;
 
-            float timeDiff = Mathf.Abs(note.startTime - currentTime);
+            // Use position-based timing instead of startTime
+            float noteArrivalTime = GetNoteArrivalTime(note);
+            float timeDiff = Mathf.Abs(noteArrivalTime - currentTime);
+
             if (timeDiff <= hitWindow && timeDiff < closestTime)
             {
                 // Check if the note matches this key
@@ -268,6 +277,21 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         }
 
         return closestNote;
+    }
+
+    private float GetNoteArrivalTime(NoteData note)
+    {
+        // Get SongHandler to calculate position-based arrival time
+        var songHandler = ServiceLocator.Instance.GetService<SongHandler>();
+        if (songHandler != null)
+        {
+            // Calculate position-based arrival time
+            float beatDuration = 60f / songHandler.GetCurrentBPM();
+            return note.notePosition * beatDuration;
+        }
+
+        // Fallback to original startTime if SongHandler not available
+        return note.startTime;
     }
 
     private bool IsNoteMatch(NoteData note)
@@ -283,7 +307,8 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (gameplayManager == null) return 0f;
 
         float currentTime = gameplayManager.GetCurrentTime();
-        float timeDiff = Mathf.Abs(note.startTime - currentTime);
+        float noteArrivalTime = GetNoteArrivalTime(note);
+        float timeDiff = Mathf.Abs(noteArrivalTime - currentTime);
         float hitWindow = gameplayManager.hitWindow;
 
         // Calculate accuracy based on timing

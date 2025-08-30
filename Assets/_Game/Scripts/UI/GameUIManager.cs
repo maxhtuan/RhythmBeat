@@ -1,14 +1,21 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System;
+using System.Threading.Tasks;
 
-public class GameUIManager : MonoBehaviour
+public class GameUIManager : MonoBehaviour, IService
 {
     [Header("UI Panels")]
     public GameObject titlePanel;
     public GameObject gameplayPanel;
     public GameObject pausePanel;
     public GameObject gameOverPanel;
+
+    public Action onSpeedUpTriggered;
+
+
+    [SerializeField] GameObject speedUpPanel; // the panel that shows when speed up is triggered
 
     [Header("Title Screen")]
     public Button startButton;
@@ -55,8 +62,10 @@ public class GameUIManager : MonoBehaviour
         // Find GameplayManager if not assigned
         if (gameplayManager == null)
         {
-            gameplayManager = FindObjectOfType<GameplayManager>();
+            gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
         }
+
+        onSpeedUpTriggered += OnSpeedUpTriggered;
 
         SetupUI();
         ShowTitleScreen();
@@ -294,6 +303,13 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
+    public async void OnSpeedUpTriggered()
+    {
+        ShowPanel(speedUpPanel);
+        await Task.Delay(1500);
+        HidePanel(speedUpPanel);
+    }
+
     // Public method to be called when game starts from first hit
     public void OnGameStartedFromFirstHit()
     {
@@ -333,5 +349,10 @@ public class GameUIManager : MonoBehaviour
         HidePanel(titlePanel);
         HidePanel(gameplayPanel);
         HidePanel(pausePanel);
+    }
+
+    public void Cleanup()
+    {
+        onSpeedUpTriggered = null;
     }
 }

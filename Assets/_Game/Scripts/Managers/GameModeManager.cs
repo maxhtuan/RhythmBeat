@@ -111,6 +111,11 @@ public class GameModeManager : MonoBehaviour, IService
         activeMode?.OnBeatHit();
     }
 
+    public void OnNoteMissed()
+    {
+        activeMode?.OnNoteMissed();
+    }
+
     // Context menu for testing
     [ContextMenu("Switch to Perform")]
     public void SwitchToPerform()
@@ -129,7 +134,6 @@ public class GameModeManager : MonoBehaviour, IService
     {
         SetMode(GameModeType.SpeedUp);
     }
-
     public void Cleanup()
     {
         activeMode?.End();

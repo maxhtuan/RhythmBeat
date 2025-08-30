@@ -9,7 +9,6 @@ public class GameplayManager : MonoBehaviour, IService
 {
     [Header("Basic Settings")]
     public GameBoard gameBoard; // Assign your GameBoard component here
-    public GameObject notePrefab; // Assign your note prefab here
 
     [Header("Note Visual")]
     public float noteLengthMultiplier = 2f; // Multiply note visual length by this value
@@ -30,19 +29,16 @@ public class GameplayManager : MonoBehaviour, IService
     [Header("Time Manager")]
     [SerializeField] TimeManager timeManager;
 
-    [Header("UI Manager")]
-    [SerializeField] GameUIManager gameUIManager;
+    GameUIManager gameUIManager;
 
     [Header("Controls")]
     // Removed keyboard controls - using UI buttons instead
 
     // Game state - now managed by GameStateManager
     private float currentTime = 0f;
-    public List<NoteData> notes = new List<NoteData>();
-    private List<GameObject> activeNotes = new List<GameObject>();
 
-    // Add this field at the top of GameplayManager class
-    private Dictionary<NoteData, GameObject> noteToGameObjectMap = new Dictionary<NoteData, GameObject>();
+    // Note management is now handled by NoteManager
+    private NoteManager noteManager;
 
 
 
@@ -79,10 +75,13 @@ public class GameplayManager : MonoBehaviour, IService
 
         // Step 2: Load notes from XML
         LoadNotes();
-        Debug.Log($"Loaded {notes.Count} notes from XML");
+        Debug.Log($"Loaded notes from XML");
 
         // Step 3: Pre-spawn initial notes
-        PreSpawnInitialNotes();
+        if (noteManager != null)
+        {
+            noteManager.PreSpawnInitialNotes();
+        }
 
         isSetupComplete = true;
 
@@ -97,7 +96,8 @@ public class GameplayManager : MonoBehaviour, IService
         dataHandler = ServiceLocator.Instance.GetService<DataHandler>();
         songHandler = ServiceLocator.Instance.GetService<SongHandler>();
         gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
-
+        noteManager = ServiceLocator.Instance.GetService<NoteManager>();
+        gameUIManager = ServiceLocator.Instance.GetService<GameUIManager>();
         Debug.Log("Starting manager initialization...");
 
         if (gameUIManager != null)
@@ -114,7 +114,12 @@ public class GameplayManager : MonoBehaviour, IService
         {
             // Use real time for currentTime (not scaled time)
             currentTime += Time.deltaTime;
-            UpdateNotes();
+
+            // Update notes using NoteManager
+            if (noteManager != null)
+            {
+                noteManager.UpdateNotes(currentTime);
+            }
 
             // Update TimeManager
             if (timeManager != null)
@@ -125,7 +130,10 @@ public class GameplayManager : MonoBehaviour, IService
         else if (gameStateManager != null && gameStateManager.IsPreparing())
         {
             // Update note positions even when waiting for first hit
-            UpdateNotePositions();
+            if (noteManager != null)
+            {
+                noteManager.UpdateNotePositions(currentTime);
+            }
         }
     }
 
@@ -140,13 +148,19 @@ public class GameplayManager : MonoBehaviour, IService
         }
 
         // Load notes using DataHandler
-        notes = dataHandler.LoadNotesFromXML();
+        var loadedNotes = dataHandler.LoadNotesFromXML();
+
+        // Pass notes to NoteManager
+        if (noteManager != null)
+        {
+            noteManager.LoadNotes(loadedNotes);
+        }
 
         // Debug: Print all loaded notes with their positions
-        Debug.Log($"Loaded {notes.Count} notes:");
-        for (int i = 0; i < Mathf.Min(notes.Count, 10); i++) // Show first 10 notes
+        Debug.Log($"Loaded {loadedNotes.Count} notes:");
+        for (int i = 0; i < Mathf.Min(loadedNotes.Count, 10); i++) // Show first 10 notes
         {
-            var note = notes[i];
+            var note = loadedNotes[i];
             Debug.Log($"  Note {i}: position={note.notePosition}, pitch={note.pitch}, isRest={note.isRest}");
         }
 
@@ -240,7 +254,10 @@ public class GameplayManager : MonoBehaviour, IService
         ClearAllNotes();
 
         // Pre-spawn notes for the first 5 seconds again
-        PreSpawnInitialNotes();
+        if (noteManager != null)
+        {
+            noteManager.PreSpawnInitialNotes();
+        }
 
         // Notify UI Manager to show title again
         if (gameUIManager != null)
@@ -280,8 +297,9 @@ public class GameplayManager : MonoBehaviour, IService
             StartGameFromFirstHit(note);
         }
 
-        // Find the note GameObject using the dictionary
-        if (noteToGameObjectMap.TryGetValue(note, out GameObject noteObj))
+        // Find the note GameObject using NoteManager
+        GameObject noteObj = noteManager?.GetNoteGameObject(note);
+        if (noteObj != null)
         {
             NoteController noteController = noteObj.GetComponent<NoteController>();
             if (noteController != null)
@@ -297,8 +315,6 @@ public class GameplayManager : MonoBehaviour, IService
         {
             Debug.LogWarning($"Could not find GameObject for note: {note.pitch}");
         }
-
-
 
         // Notify GameModeManager
         if (gameModeManager != null)
@@ -328,8 +344,9 @@ public class GameplayManager : MonoBehaviour, IService
 
         Debug.Log($"Note released: {note?.pitch}");
 
-        // Find the note GameObject using the dictionary
-        if (noteToGameObjectMap.TryGetValue(note, out GameObject noteObj))
+        // Find the note GameObject using NoteManager
+        GameObject noteObj = noteManager?.GetNoteGameObject(note);
+        if (noteObj != null)
         {
             NoteController noteController = noteObj.GetComponent<NoteController>();
             if (noteController != null)
@@ -343,12 +360,6 @@ public class GameplayManager : MonoBehaviour, IService
         else
         {
             Debug.LogWarning($"Could not find GameObject for note: {note.pitch}");
-        }
-
-        // Notify GameModeManager
-        if (gameModeManager != null)
-        {
-            gameModeManager.OnBeatHit();
         }
     }
 
@@ -367,225 +378,24 @@ public class GameplayManager : MonoBehaviour, IService
     // Method to get active NoteControllers for PianoKey linking
     public List<NoteController> GetActiveNoteControllers()
     {
-        List<NoteController> controllers = new List<NoteController>();
-        foreach (var noteObj in activeNotes)
-        {
-            if (noteObj != null)
-            {
-                NoteController controller = noteObj.GetComponent<NoteController>();
-                if (controller != null)
-                {
-                    controllers.Add(controller);
-                }
-            }
-        }
-        return controllers;
+        return noteManager?.GetActiveNoteControllers() ?? new List<NoteController>();
     }
 
-    void UpdateNotes()
-    {
-        // Spawn notes from XML data based on time
-        float noteSpawnOffset = songHandler != null ? songHandler.GetNoteSpawnOffset() : 3f;
-        foreach (var note in notes)
-        {
-            if (!note.isRest &&
-                note.startTime <= currentTime + noteSpawnOffset && // Spawn up to offset seconds before hit
-                note.startTime > currentTime && // Don't spawn notes that have already passed
-                !IsNoteAlreadySpawned(note))
-            {
-                SpawnNote(note);
-            }
-        }
-
-        UpdateNotePositions();
-        CleanupOldNotes();
-    }
-
-    void UpdateNotePositions()
-    {
-        // Update note positions using NoteController
-        foreach (var noteObj in activeNotes)
-        {
-            if (noteObj != null)
-            {
-                NoteController noteController = noteObj.GetComponent<NoteController>();
-                if (noteController != null)
-                {
-                    // During preparation, we need to position notes based on their actual start time
-                    // rather than the current game time (which is 0)
-                    float timeToUse = gameStateManager != null && gameStateManager.IsPreparing()
-                        ? 0f  // Use 0 for preparation so notes show their correct positions
-                        : currentTime;
-
-                    float noteSpawnOffset = songHandler != null ? songHandler.GetNoteSpawnOffset() : 3f;
-                    float noteArrivalOffset = songHandler != null ? songHandler.GetNoteArrivalOffset() : 0f;
-                    noteController.UpdatePosition(timeToUse, noteSpawnOffset, noteArrivalOffset);
-                }
-            }
-        }
-    }
-
-    void PreSpawnInitialNotes()
-    {
-        // Pre-spawn all notes for the first 5 seconds
-        foreach (var note in notes)
-        {
-            if (!note.isRest &&
-                note.startTime <= 5f && // Pre-spawn notes for first 5 seconds
-                !IsNoteAlreadySpawned(note))
-            {
-                SpawnNote(note);
-            }
-        }
-        Debug.Log($"Pre-spawned notes for first 5 seconds");
-    }
-
+    // Note-related methods are now handled by NoteManager
     void SpawnInitialNotes()
     {
-        // Spawn notes that should have already been spawned before the game started
-        float noteSpawnOffset = songHandler != null ? songHandler.GetNoteSpawnOffset() : 3f;
-        foreach (var note in notes)
+        if (noteManager != null)
         {
-            if (!note.isRest &&
-                note.startTime <= noteSpawnOffset && // Notes that should have been spawned before game start
-                !IsNoteAlreadySpawned(note))
-            {
-                SpawnNote(note);
-            }
-        }
-    }
-
-    bool IsNoteAlreadySpawned(NoteData note)
-    {
-        // Check if a note with this pitch and start time has already been spawned
-        foreach (var noteObj in activeNotes)
-        {
-            if (noteObj != null)
-            {
-                NoteController noteController = noteObj.GetComponent<NoteController>();
-                if (noteController != null && noteController.noteData != null)
-                {
-                    if (noteController.noteData.pitch == note.pitch &&
-                        Mathf.Abs(noteController.noteData.startTime - note.startTime) < 0.1f)
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    void SpawnNote(NoteData note)
-    {
-        if (gameBoard == null)
-        {
-            Debug.LogError("GameBoard is null, cannot spawn note!");
-            return;
-        }
-
-        if (!gameBoard.IsInitialized())
-        {
-            Debug.LogError("GameBoard is not initialized, cannot spawn note!");
-            return;
-        }
-
-        GameObject noteObj;
-        NoteController noteController;
-
-        // Get spawn and target positions from the board
-        Vector3 spawnPos = gameBoard.GetSpawnPosition(note.pitch);
-        Vector3 targetPos = gameBoard.GetTargetPosition(note.pitch);
-
-        if (notePrefab != null)
-        {
-            // Use the prefab
-            noteObj = Instantiate(notePrefab, spawnPos, Quaternion.identity);
-            noteObj.name = $"Note_{note.pitch}_{note.startTime:F1}_{note.duration:F1}";
-            noteController = noteObj.GetComponent<NoteController>();
-        }
-        else
-        {
-            noteObj = null;
-            noteController = null;
-            return;
-        }
-
-        // Initialize with GameplayManager reference
-        if (noteController != null)
-        {
-            float noteTravelTime = songHandler != null ? songHandler.GetNoteTravelTime() : 3f;
-            noteController.Initialize(note, spawnPos, targetPos, noteTravelTime, this);
-        }
-
-        // Add to active notes list
-        activeNotes.Add(noteObj);
-
-        // Add to dictionary for easy lookup
-        noteToGameObjectMap[note] = noteObj;
-
-        Debug.Log($"Spawned note: {note.pitch} at {note.startTime:F2}s");
-    }
-
-    void CleanupOldNotes()
-    {
-        List<GameObject> toRemove = new List<GameObject>();
-        List<NoteData> notesToRemove = new List<NoteData>();
-
-        foreach (var noteObj in activeNotes)
-        {
-            if (noteObj == null)
-            {
-                toRemove.Add(noteObj);
-            }
-            else
-            {
-                NoteController noteController = noteObj.GetComponent<NoteController>();
-                if (noteController != null && noteController.noteData != null)
-                {
-                    if (noteController.HasCompletelyPassedBoard())
-                    {
-                        noteController.Release();
-                        noteController.UnlinkFromPianoKey();
-                    }
-
-                    // Remove notes that have passed their start time by more than 4 seconds
-                    if (currentTime > noteController.noteData.startTime + 4f)
-                    {
-                        toRemove.Add(noteObj);
-                        notesToRemove.Add(noteController.noteData);
-                    }
-                }
-            }
-        }
-
-        foreach (var noteObj in toRemove)
-        {
-            if (noteObj != null)
-            {
-                Destroy(noteObj);
-            }
-            activeNotes.Remove(noteObj);
-        }
-
-        // Clean up dictionaries
-        foreach (var note in notesToRemove)
-        {
-            noteToGameObjectMap.Remove(note);
+            noteManager.SpawnInitialNotes();
         }
     }
 
     void ClearAllNotes()
     {
-        foreach (var noteObj in activeNotes)
+        if (noteManager != null)
         {
-            if (noteObj != null)
-            {
-                Destroy(noteObj);
-            }
+            noteManager.ClearAllNotes();
         }
-        activeNotes.Clear();
-        noteToGameObjectMap.Clear();
     }
 
     public void ResetBPM()

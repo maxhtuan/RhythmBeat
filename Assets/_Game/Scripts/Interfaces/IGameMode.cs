@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+using System.Threading;
 public interface IGameMode
 {
     string ModeName { get; }
@@ -6,5 +8,6 @@ public interface IGameMode
     void Pause();
     void Resume();
     void End();
-    void OnBeatHit();
+    Task OnBeatHit();
+    void OnNoteMissed();
 }

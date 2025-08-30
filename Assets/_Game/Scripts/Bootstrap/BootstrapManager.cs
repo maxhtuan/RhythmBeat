@@ -15,6 +15,8 @@ public class BootstrapManager : MonoBehaviour
     public DataHandler dataHandler;
     public SongHandler songHandler;
     public GameBoard gameBoard;
+    public NoteManager noteManager;
+    public GameUIManager gameUIManager;
 
     private void Awake()
     {
@@ -85,6 +87,16 @@ public class BootstrapManager : MonoBehaviour
         if (gameBoard != null)
         {
             ServiceLocator.Instance.RegisterService(gameBoard);
+        }
+
+        if (noteManager != null)
+        {
+            ServiceLocator.Instance.RegisterService(noteManager);
+        }
+
+        if (gameUIManager != null)
+        {
+            ServiceLocator.Instance.RegisterService(gameUIManager);
         }
 
         // Initialize all services

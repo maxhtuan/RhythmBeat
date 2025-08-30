@@ -14,10 +14,12 @@ public class TimeManager : MonoBehaviour, IService
     [Header("Settings")]
     public bool showTimeText = true;
     public bool showTotalTimeText = true;
+    public float songCompletionThreshold = 0.95f; // Percentage of song completion to trigger end (95%)
 
     private float songDuration = 0f;
     private float currentTime = 0f;
     private bool isInitialized = false;
+    private bool songEndTriggered = false;
 
     void Start()
     {
@@ -145,6 +147,9 @@ public class TimeManager : MonoBehaviour, IService
         {
             timeText.text = FormatTime(currentTime);
         }
+
+        // Check for song completion and trigger game end
+        CheckSongCompletion();
     }
 
     string FormatTime(float timeInSeconds)
@@ -179,6 +184,7 @@ public class TimeManager : MonoBehaviour, IService
     public void Reset()
     {
         currentTime = 0f;
+        songEndTriggered = false; // Reset song completion flag
 
         // Reset slider to 0
         if (progressSlider != null)
@@ -195,11 +201,38 @@ public class TimeManager : MonoBehaviour, IService
         Debug.Log("TimeManager reset to 0");
     }
 
+    // Check for song completion and trigger game end
+    private void CheckSongCompletion()
+    {
+        if (songEndTriggered || songDuration <= 0f) return;
+
+        float completionPercentage = currentTime / songDuration;
+
+        if (completionPercentage >= songCompletionThreshold)
+        {
+            songEndTriggered = true;
+            Debug.Log($"TimeManager: Song completion threshold reached ({completionPercentage:P1}) - Triggering game end");
+            TriggerGameEnd();
+        }
+    }
+
+    // Trigger game end
+    private void TriggerGameEnd()
+    {
+        var gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
+        if (gameStateManager != null)
+        {
+            gameStateManager.SetGameState(GameState.End);
+            Debug.Log("TimeManager: Game State set to End");
+        }
+    }
+
     public void Cleanup()
     {
         currentTime = 0f;
         songDuration = 0f;
         isInitialized = false;
+        songEndTriggered = false;
         Debug.Log("TimeManager cleaned up");
     }
 }
