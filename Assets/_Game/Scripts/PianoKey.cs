@@ -15,6 +15,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     public TMPro.TextMeshProUGUI text;
     public Button button;
     public GameplayManager gameplayManager;
+    public GameStateManager gameStateManager;
     public Animator animator;
 
     [Header("Audio")]
@@ -31,6 +32,35 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     public void Initialize()
     {
         if (isInitialized) return;
+
+
+        // Find GameplayManager if not assigned
+        if (gameplayManager == null)
+        {
+            gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
+        }
+
+        // Find AudioManager if not assigned
+        if (audioManager == null)
+        {
+            audioManager = ServiceLocator.Instance.GetService<AudioManager>();
+        }
+
+        if (gameStateManager == null)
+        {
+            gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
+        }
+
+        gameStateManager.SubcribeToGameStateChanged((gameState) =>
+        {
+
+            if (gameState == GameState.Preparing)
+            {
+                CheckIfShouldSuggest();
+            }
+
+
+        });
 
         SetupPianoKey();
         CheckIfShouldSuggest();
@@ -51,18 +81,6 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (button == null)
             button = GetComponent<Button>();
 
-        // Find GameplayManager if not assigned
-        if (gameplayManager == null)
-        {
-            gameplayManager = FindObjectOfType<GameplayManager>();
-        }
-
-        // Find AudioManager if not assigned
-        if (audioManager == null)
-        {
-            audioManager = FindObjectOfType<AudioManager>();
-        }
-
         // Set the original color
         originalColor = keyColor;
 
@@ -79,7 +97,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     void Update()
     {
         // Check if we should stop the suggestion animation
-        if (suggestionActive && gameplayManager != null && !gameplayManager.isWaitingForFirstHit)
+        if (suggestionActive && gameplayManager != null && !gameStateManager.IsPreparing())
         {
             StopSuggestion();
         }

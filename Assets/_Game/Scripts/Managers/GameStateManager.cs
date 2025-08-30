@@ -3,14 +3,12 @@ using System;
 
 public class GameStateManager : MonoBehaviour, IService
 {
-    private GameState currentState = GameState.Menu;
-    private GameState previousState = GameState.Menu;
+    private GameState currentState = GameState.Preparing;
+    private GameState previousState = GameState.Preparing;
 
     // Events
     public event Action<GameState> OnGameStateChanged;
     public event Action OnGameStarted;
-    public event Action OnGamePaused;
-    public event Action OnGameResumed;
     public event Action OnGameEnded;
 
     public void SetGameState(GameState newState)
@@ -24,21 +22,10 @@ public class GameStateManager : MonoBehaviour, IService
         switch (newState)
         {
             case GameState.Playing:
-                if (previousState == GameState.Menu)
-                {
-                    OnGameStarted?.Invoke();
-                }
-                else if (previousState == GameState.Paused)
-                {
-                    OnGameResumed?.Invoke();
-                }
+                OnGameStarted?.Invoke();
                 break;
 
-            case GameState.Paused:
-                OnGamePaused?.Invoke();
-                break;
-
-            case GameState.GameOver:
+            case GameState.End:
                 OnGameEnded?.Invoke();
                 break;
         }
@@ -64,39 +51,37 @@ public class GameStateManager : MonoBehaviour, IService
         return currentState == state;
     }
 
+    public bool IsPreparing()
+    {
+        return currentState == GameState.Preparing;
+    }
+
     public bool IsPlaying()
     {
         return currentState == GameState.Playing;
     }
 
-    public bool IsPaused()
+    public bool IsEnded()
     {
-        return currentState == GameState.Paused;
+        return currentState == GameState.End;
     }
 
-    public bool IsGameOver()
+    public void SubcribeToGameStateChanged(Action<GameState> action)
     {
-        return currentState == GameState.GameOver;
-    }
-
-    public bool IsInMenu()
-    {
-        return currentState == GameState.Menu;
+        OnGameStateChanged += action;
     }
 
     public void Initialize()
     {
-        currentState = GameState.Menu;
-        previousState = GameState.Menu;
-        Debug.Log("GameStateManager initialized");
+        currentState = GameState.Preparing;
+        previousState = GameState.Preparing;
+        Debug.Log("GameStateManager initialized with Preparing state");
     }
 
     public void Cleanup()
     {
         OnGameStateChanged = null;
         OnGameStarted = null;
-        OnGamePaused = null;
-        OnGameResumed = null;
         OnGameEnded = null;
         Debug.Log("GameStateManager cleaned up");
     }

@@ -22,7 +22,7 @@ public class TimelineManager : MonoBehaviour
     private List<GameObject> timelineLines = new List<GameObject>();
     private bool isInitialized = false;
     private float songDuration = 0f;
-
+    private SongHandler songHandler;
     // Remove Start() method - initialization will be called from GameplayManager
 
     void Update()
@@ -39,10 +39,11 @@ public class TimelineManager : MonoBehaviour
 
         // Get references if not assigned
         if (gameplayManager == null)
-            gameplayManager = FindObjectOfType<GameplayManager>();
-
+            gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
+        if (songHandler == null)
+            songHandler = ServiceLocator.Instance.GetService<SongHandler>();
         if (gameBoard == null)
-            gameBoard = FindObjectOfType<GameBoard>();
+            gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
 
         InitializeTimeline();
         isInitialized = true;
@@ -179,7 +180,7 @@ public class TimelineManager : MonoBehaviour
 
         // Calculate how far the line should be based on time
         float totalDistance = Vector3.Distance(gameBoard.GetSpawnPosition("C"), gameBoard.GetTargetPosition("C"));
-        float travelSpeed = totalDistance / gameplayManager.noteTravelTime;
+        float travelSpeed = totalDistance / songHandler.noteTravelTime;
         float distanceTraveled = time * travelSpeed;
 
         // Position line along the travel path
@@ -229,7 +230,7 @@ public class TimelineManager : MonoBehaviour
             timelineLines[i].transform.position = newPosition;
 
             // Show/hide line based on whether it should be visible
-            bool shouldBeVisible = timeUntilArrival > -gameplayManager.noteTravelTime && timeUntilArrival < gameplayManager.noteSpawnOffset;
+            bool shouldBeVisible = timeUntilArrival > -songHandler.noteTravelTime && timeUntilArrival < songHandler.noteSpawnOffset;
             timelineLines[i].SetActive(shouldBeVisible);
 
             // Debug first line to see what's happening

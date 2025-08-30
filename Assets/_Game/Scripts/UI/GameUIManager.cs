@@ -67,18 +67,12 @@ public class GameUIManager : MonoBehaviour
 
     void SetupUI()
     {
-        // Setup button listeners
-        if (startButton != null)
-            startButton.onClick.AddListener(OnStartButtonClicked);
 
         if (settingsButton != null)
             settingsButton.onClick.AddListener(OnSettingsButtonClicked);
 
         if (quitButton != null)
             quitButton.onClick.AddListener(OnQuitButtonClicked);
-
-        if (resumeButton != null)
-            resumeButton.onClick.AddListener(OnResumeButtonClicked);
 
         if (restartButton != null)
             restartButton.onClick.AddListener(OnRestartButtonClicked);
@@ -214,17 +208,6 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    // Button event handlers
-    private void OnStartButtonClicked()
-    {
-        if (gameplayManager != null)
-        {
-            gameplayManager.StartGame();
-            isPlaying = true;
-            isPaused = false;
-            UpdateUIForState();
-        }
-    }
 
     private void OnSettingsButtonClicked()
     {
@@ -241,16 +224,6 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    private void OnResumeButtonClicked()
-    {
-        if (gameplayManager != null)
-        {
-            gameplayManager.StartGame();
-            isPlaying = true;
-            isPaused = false;
-            UpdateUIForState();
-        }
-    }
 
     private void OnRestartButtonClicked()
     {

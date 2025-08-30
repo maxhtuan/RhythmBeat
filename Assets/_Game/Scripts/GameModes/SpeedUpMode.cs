@@ -11,6 +11,8 @@ public class SpeedUpMode : IGameMode
     private GameplayManager gameplayManager;
     private AudioSource musicSource;
     private MetronomeManager metronomeManager; // Add this
+    private GameSettingsManager settingsManager;
+    private SongHandler songHandler;
     private int beatCount = 0;
     private float originalBPM = 60f;
     private float currentBPM = 60f;
@@ -25,26 +27,27 @@ public class SpeedUpMode : IGameMode
         this.gameplayManager = gameplayManager;
         this.musicSource = musicSource;
 
-        // Get metronome manager reference
-        if (gameplayManager != null)
-        {
-            this.metronomeManager = gameplayManager.metronomeManager;
-        }
     }
 
     public void Initialize()
     {
         Debug.Log("Speed Up Mode: Initialized");
+        this.metronomeManager = ServiceLocator.Instance.GetService<MetronomeManager>();
+        this.gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
+        this.settingsManager = ServiceLocator.Instance.GetService<GameSettingsManager>();
+        this.songHandler = ServiceLocator.Instance.GetService<SongHandler>();
+
+
         beatCount = 0;
         hasHitFirstNote = false;
 
         // Get the original BPM from GameplayManager
-        if (gameplayManager != null)
+        if (songHandler != null)
         {
-            originalBPM = gameplayManager.originalBPM;
+            originalBPM = songHandler.originalBPM;
             currentBPM = originalBPM;
             secondsPerBeat = 60f / originalBPM;
-            gameplayManager.SetBPM(originalBPM); // Reset to original BPM
+            songHandler.SetBPM(originalBPM); // Reset to original BPM
         }
 
         Debug.Log($"Speed Up Mode: Original BPM = {originalBPM}, Seconds per beat = {secondsPerBeat:F2}");
@@ -143,30 +146,30 @@ public class SpeedUpMode : IGameMode
             float bpmIncrease = 0f; // Default to 0 since you set it to 0
             int beatsBeforeSpeedUp = 3; // Default
 
-            if (gameplayManager.settingsManager != null)
+            if (settingsManager != null)
             {
-                bpmIncrease = gameplayManager.settingsManager.BPMIncreaseAmount;
-                beatsBeforeSpeedUp = gameplayManager.settingsManager.BeatsBeforeSpeedUp;
+                bpmIncrease = settingsManager.BPMIncreaseAmount;
+                beatsBeforeSpeedUp = settingsManager.BeatsBeforeSpeedUp;
             }
 
             // Every N beats, increase BPM by specified amount
-            if (beatCount % beatsBeforeSpeedUp == 0 && bpmIncrease > 0)
-            {
-                currentBPM += bpmIncrease;
-                Debug.Log($"Speed Up Mode: BPM increased to {currentBPM}");
+            // if (beatCount % beatsBeforeSpeedUp == 0 && bpmIncrease > 0)
+            // {
+            //     currentBPM += bpmIncrease;
+            //     Debug.Log($"Speed Up Mode: BPM increased to {currentBPM}");
 
-                // Only update GameplayManager - metronome will sync from it
-                if (gameplayManager != null)
-                {
-                    gameplayManager.SetBPM(currentBPM);
+            //     // Only update GameplayManager - metronome will sync from it
+            //     if (songHandler != null)
+            //     {
+            //         songHandler.SetBPM(currentBPM);
 
-                    // Sync metronome BPM from GameplayManager
-                    if (metronomeManager != null)
-                    {
-                        metronomeManager.SyncBPMFromGameplayManager();
-                    }
-                }
-            }
+            //         // Sync metronome BPM from GameplayManager
+            //         if (metronomeManager != null)
+            //         {
+            //             metronomeManager.SyncBPMFromGameplayManager();
+            //         }
+            //     }
+            // }
         }
         else
         {

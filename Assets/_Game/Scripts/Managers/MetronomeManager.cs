@@ -6,6 +6,7 @@ public class MetronomeManager : MonoBehaviour, IService
     [Header("Metronome Settings")]
     public AudioSource metronomeAudioSource;
     public AudioClip beatSound;
+    private SongHandler songHandler;
 
     [Header("Timing")]
     public float bpm = 60f;
@@ -31,7 +32,7 @@ public class MetronomeManager : MonoBehaviour, IService
     {
         if (isInitialized) return;
         gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
-
+        songHandler = ServiceLocator.Instance.GetService<SongHandler>();
         // Calculate seconds per beat
         secondsPerBeat = 60f / bpm;
         nextBeatTime = 0f;
@@ -67,9 +68,14 @@ public class MetronomeManager : MonoBehaviour, IService
         {
             PlayBeat();
             beatCount++;
-            nextBeatTime += secondsPerBeat; // Always add exactly one beat interval
 
-            Debug.Log($"Metronome beat {beatCount} scheduled for {nextBeatTime:F2}s");
+            // Calculate the next beat time based on the current BPM
+            // Don't just add secondsPerBeat, recalculate based on current time
+            float beatsElapsed = currentGameTime / secondsPerBeat;
+            int nextBeatNumber = Mathf.FloorToInt(beatsElapsed) + 1;
+            nextBeatTime = nextBeatNumber * secondsPerBeat;
+
+            Debug.Log($"Metronome beat {beatCount} scheduled for {nextBeatTime:F2}s (BPM: {bpm}, interval: {secondsPerBeat:F2}s)");
         }
     }
 
@@ -78,7 +84,7 @@ public class MetronomeManager : MonoBehaviour, IService
         if (isPlaying) return;
 
         isPlaying = true;
-        beatCount = 0;
+        beatCount = 1;
 
         float currentGameTime = gameplayManager != null ? gameplayManager.GetCurrentTime() : 0f;
 
@@ -101,8 +107,9 @@ public class MetronomeManager : MonoBehaviour, IService
         if (gameplayManager != null)
         {
             float oldBPM = bpm;
-            bpm = gameplayManager.currentBPM;
             float oldSecondsPerBeat = secondsPerBeat;
+
+            bpm = songHandler.currentBPM;
             secondsPerBeat = 60f / bpm;
 
             // If the metronome is playing and BPM changed, we need to adjust the timing
@@ -115,13 +122,19 @@ public class MetronomeManager : MonoBehaviour, IService
                 int currentBeatNumber = Mathf.FloorToInt(totalBeatsElapsed);
 
                 // Calculate when the next beat should happen using the new BPM
-                float timeSinceLastBeat = currentGameTime % oldSecondsPerBeat;
-                float newTimeSinceLastBeat = timeSinceLastBeat * (oldSecondsPerBeat / secondsPerBeat);
+                // Find the time of the last beat that should have happened
+                float lastBeatTime = currentBeatNumber * oldSecondsPerBeat;
 
-                // Set next beat time based on the new BPM
-                nextBeatTime = currentGameTime + (secondsPerBeat - newTimeSinceLastBeat);
+                // Calculate the next beat time using the new BPM
+                nextBeatTime = lastBeatTime + secondsPerBeat;
 
-                Debug.Log($"Metronome BPM changed from {oldBPM} to {bpm}. Adjusted timing: next beat at {nextBeatTime:F2}s (interval: {secondsPerBeat:F2}s)");
+                // If the next beat time is in the past, advance to the next beat
+                while (nextBeatTime <= currentGameTime)
+                {
+                    nextBeatTime += secondsPerBeat;
+                }
+
+                Debug.Log($"Metronome BPM changed from {oldBPM} to {bpm}. Current time: {currentGameTime:F2}s, next beat at {nextBeatTime:F2}s (interval: {secondsPerBeat:F2}s)");
             }
             else
             {
@@ -136,7 +149,9 @@ public class MetronomeManager : MonoBehaviour, IService
         if (gameplayManager != null)
         {
             float oldBPM = bpm;
-            bpm = gameplayManager.currentBPM;
+            float oldSecondsPerBeat = secondsPerBeat;
+
+            bpm = songHandler.currentBPM;
             secondsPerBeat = 60f / bpm;
 
             // If the metronome is playing, recalculate timing
@@ -144,11 +159,23 @@ public class MetronomeManager : MonoBehaviour, IService
             {
                 float currentGameTime = gameplayManager.GetCurrentTime();
 
-                // Recalculate next beat time based on current time and new BPM
-                float timeSinceLastBeat = currentGameTime % secondsPerBeat;
-                nextBeatTime = currentGameTime + (secondsPerBeat - timeSinceLastBeat);
+                // More aggressive sync: calculate next beat based on current time and new BPM
+                // Find how many beats should have happened by now with the new BPM
+                float beatsElapsedWithNewBPM = currentGameTime / secondsPerBeat;
+                int currentBeatNumber = Mathf.FloorToInt(beatsElapsedWithNewBPM);
 
-                Debug.Log($"Metronome synced BPM to {bpm} from GameplayManager. Next beat at {nextBeatTime:F2}s");
+                // Calculate the next beat time using the new BPM
+                nextBeatTime = (currentBeatNumber + 1) * secondsPerBeat;
+
+                // If we're very close to the next beat (within 0.1 seconds), just advance to it
+                float timeToNextBeat = nextBeatTime - currentGameTime;
+                if (timeToNextBeat <= 0.1f && timeToNextBeat > 0f)
+                {
+                    nextBeatTime = currentGameTime + 0.05f; // Schedule beat very soon
+                    Debug.Log($"Metronome: Close to beat, advancing. Current: {currentGameTime:F2}s, Next beat at: {nextBeatTime:F2}s");
+                }
+
+                Debug.Log($"Metronome synced BPM from {oldBPM} to {bpm}. Current time: {currentGameTime:F2}s, next beat at {nextBeatTime:F2}s (interval: {secondsPerBeat:F2}s)");
             }
             else
             {

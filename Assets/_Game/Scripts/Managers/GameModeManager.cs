@@ -40,11 +40,15 @@ public class GameModeManager : MonoBehaviour, IService
         Debug.Log("GameModeManager: Initialized");
     }
 
+    public bool IsSpeedUpMode()
+    {
+        return currentMode == GameModeType.SpeedUp;
+    }
+
     void InitializeModes()
     {
         // Create mode instances
         availableModes[GameModeType.Perform] = new PerformMode(gameplayManager, musicSource);
-        availableModes[GameModeType.Practice] = new PracticeMode(gameplayManager);
         availableModes[GameModeType.SpeedUp] = new SpeedUpMode(gameplayManager, musicSource);
 
         Debug.Log($"GameModeManager: Initialized {availableModes.Count} modes");

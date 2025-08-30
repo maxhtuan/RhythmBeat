@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Xml.Linq;
 using System.Linq;
 using System.Threading.Tasks;
+using System;
 
 public class GameplayManager : MonoBehaviour, IService
 {
@@ -10,18 +11,9 @@ public class GameplayManager : MonoBehaviour, IService
     public GameBoard gameBoard; // Assign your GameBoard component here
     public GameObject notePrefab; // Assign your note prefab here
 
-    [Header("Note Timing")]
-    public float noteSpawnOffset = 3f; // How many seconds before hit time to spawn notes
-    public float noteTravelTime = 3f; // How long notes take to travel from spawn to target
-    public float noteArrivalOffset = 0f; // How many seconds before hit time notes should arrive (negative = early, positive = late)
+    [Header("Note Visual")]
     public float noteLengthMultiplier = 2f; // Multiply note visual length by this value
     [SerializeField] TargetBarController targetBarController;
-
-    // Add BPM and time scaling properties
-    [Header("BPM and Timing")]
-    public float originalBPM = 60f; // Original BPM from XML
-    public float currentBPM = 60f; // Current BPM (can be modified by game modes)
-    public float timeScale = 1f; // Time scaling factor (1.0 = normal speed)
 
     // Public property to access target bar controller
     public TargetBarController TargetBarController => targetBarController;
@@ -44,9 +36,7 @@ public class GameplayManager : MonoBehaviour, IService
     [Header("Controls")]
     // Removed keyboard controls - using UI buttons instead
 
-    // Game state
-    private bool isPlaying = false;
-    public bool isWaitingForFirstHit = true;
+    // Game state - now managed by GameStateManager
     private float currentTime = 0f;
     public List<NoteData> notes = new List<NoteData>();
     private List<GameObject> activeNotes = new List<GameObject>();
@@ -54,26 +44,22 @@ public class GameplayManager : MonoBehaviour, IService
     // Add this field at the top of GameplayManager class
     private Dictionary<NoteData, GameObject> noteToGameObjectMap = new Dictionary<NoteData, GameObject>();
 
-    // Add this field to store the original travel speed
-    private float originalTravelSpeed = 0f;
+
+
 
     // Setup state
     private bool isSetupComplete = false;
 
-    // Add this field at the top of GameplayManager class
-    [Header("Settings")]
-    public GameSettingsManager settingsManager;
-
-    // Add this field
-    [Header("Metronome")]
-    public MetronomeManager metronomeManager;
-
-    // Service Locator references
+    private GameSettingsManager settingsManager;
+    private MetronomeManager metronomeManager;
     private GameStateManager gameStateManager;
-    private AudioManager audioManager;
-    private ScoreManager scoreManager;
+    private DataHandler dataHandler;
+    private SongHandler songHandler;
+
 
     // Make it public so SpeedUpMode can access it
+
+
 
     async void Start()
     {
@@ -86,115 +72,48 @@ public class GameplayManager : MonoBehaviour, IService
     {
         // Step 1: Initialize all managers first
         InitializeAllManagers();
+
+        gameStateManager.SetGameState(GameState.None);
+
         Debug.Log("All managers initialized");
 
         // Step 2: Load notes from XML
         LoadNotes();
         Debug.Log($"Loaded {notes.Count} notes from XML");
 
-        // Step 3: Wait for GameBoard to be initialized
-        await WaitForGameBoardInitialization();
-        Debug.Log("GameBoard initialized");
-
-        // Step 4: Initialize original travel speed
-        InitializeOriginalTravelSpeed();
-        Debug.Log($"Original travel speed initialized: {originalTravelSpeed}");
-
-        // Step 5: Pre-spawn initial notes
+        // Step 3: Pre-spawn initial notes
         PreSpawnInitialNotes();
 
-        SetupAllPianoKeys();
-        Debug.Log("Pre-spawned notes for first 5 seconds. Hit the first note to start!");
-
         isSetupComplete = true;
-    }
 
-    private void SetupAllPianoKeys()
-    {
-        PianoKey[] pianoKeys = FindObjectsOfType<PianoKey>();
-        foreach (var pianoKey in pianoKeys)
-        {
-            pianoKey.Initialize();
-        }
+        gameStateManager.SetGameState(GameState.Preparing);
     }
 
     private async Task InitializeAllManagers()
     {
-        Debug.Log("Starting manager initialization...");
-
-        // Get all managers from Service Locator
-        gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
-        audioManager = ServiceLocator.Instance.GetService<AudioManager>();
-        timeManager = ServiceLocator.Instance.GetService<TimeManager>();
         gameModeManager = ServiceLocator.Instance.GetService<GameModeManager>();
         settingsManager = ServiceLocator.Instance.GetService<GameSettingsManager>();
-        metronomeManager = ServiceLocator.Instance.GetService<MetronomeManager>();
-        scoreManager = ServiceLocator.Instance.GetService<ScoreManager>();
+        gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
+        dataHandler = ServiceLocator.Instance.GetService<DataHandler>();
+        songHandler = ServiceLocator.Instance.GetService<SongHandler>();
+        gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
 
-        // await WaitUntil.serviceIsInitialized<GameStateManager>();
+        Debug.Log("Starting manager initialization...");
 
-        // Initialize managers that need manual initialization
-        // if (settingsManager != null)
-        // {
-        //     settingsManager.Initialize();
-        // }
-
-        // if (gameUIManager != null)
-        // {
-        //     gameUIManager.Initialize();
-        // }
-
+        if (gameUIManager != null)
+        {
+            gameUIManager.Initialize();
+        }
         Debug.Log("Manager initialization complete!");
     }
-
-    async Task WaitForGameBoardInitialization()
-    {
-        if (gameBoard == null)
-        {
-            Debug.LogError("GameBoard not assigned!");
-            return;
-        }
-
-        // Wait until GameBoard is initialized
-        while (!gameBoard.IsInitialized())
-        {
-            await Task.Yield();
-        }
-
-        // Debug distance information
-        Bounds boardBounds = gameBoard.GetBoardBounds();
-        Debug.Log($"GameBoard bounds: {boardBounds}");
-        Debug.Log($"Board center: {gameBoard.transform.position}");
-    }
-
-    async Task WaitForManagersReady()
-    {
-        // Wait for GameModeManager if assigned
-        if (gameModeManager != null)
-        {
-            // Add a small delay to ensure GameModeManager is ready
-            await Task.Delay(100);
-        }
-
-        // Wait for TimelineManager if assigned
-        // if (timelineManager != null)
-        // {
-        //     // Add a small delay to ensure TimelineManager is ready
-        //     await Task.Delay(100);
-        // }
-    }
-
 
 
     void Update()
     {
-        // Only run update logic if setup is complete
-        if (!isSetupComplete) return;
-
-        if (isPlaying)
+        if (gameStateManager != null && gameStateManager.IsPlaying())
         {
-            // Apply time scaling to current time increment
-            currentTime += Time.deltaTime * timeScale;
+            // Use real time for currentTime (not scaled time)
+            currentTime += Time.deltaTime;
             UpdateNotes();
 
             // Update TimeManager
@@ -203,7 +122,7 @@ public class GameplayManager : MonoBehaviour, IService
                 timeManager.UpdateCurrentTime(currentTime);
             }
         }
-        else if (isWaitingForFirstHit)
+        else if (gameStateManager != null && gameStateManager.IsPreparing())
         {
             // Update note positions even when waiting for first hit
             UpdateNotePositions();
@@ -212,113 +131,39 @@ public class GameplayManager : MonoBehaviour, IService
 
     void LoadNotes()
     {
-        // Load XML file
-        TextAsset xmlFile = Resources.Load<TextAsset>("song");
-        if (xmlFile == null)
+        // Get DataHandler from Service Locator
+        var dataHandler = ServiceLocator.Instance.GetService<DataHandler>();
+        if (dataHandler == null)
         {
-            Debug.LogError("Could not load song.xml!");
+            Debug.LogError("DataHandler not found in Service Locator!");
             return;
         }
 
-        // Parse XML (simplified)
-        var doc = XDocument.Parse(xmlFile.text);
-        float currentTime = 0f;
-        float xmlBpm = 60f;
+        // Load notes using DataHandler
+        notes = dataHandler.LoadNotesFromXML();
 
-        // Get BPM
-        var metronome = doc.Descendants("metronome").FirstOrDefault();
-        if (metronome != null)
+        // Debug: Print all loaded notes with their positions
+        Debug.Log($"Loaded {notes.Count} notes:");
+        for (int i = 0; i < Mathf.Min(notes.Count, 10); i++) // Show first 10 notes
         {
-            var perMinute = metronome.Element("per-minute");
-            if (perMinute != null)
-            {
-                xmlBpm = float.Parse(perMinute.Value);
-            }
+            var note = notes[i];
+            Debug.Log($"  Note {i}: position={note.notePosition}, pitch={note.pitch}, isRest={note.isRest}");
         }
 
-        // Store the original BPM
-        originalBPM = xmlBpm;
-        currentBPM = xmlBpm;
-
-        // Get divisions
-        var divisions = doc.Descendants("divisions").FirstOrDefault();
-        int divisionsPerQuarter = divisions != null ? int.Parse(divisions.Value) : 8;
-        float secondsPerTick = 60f / (xmlBpm * divisionsPerQuarter);
-
-        // Parse notes from Learner part only (P1)
-        var learnerPart = doc.Descendants("part").FirstOrDefault(p => p.Attribute("id")?.Value == "P1");
-        if (learnerPart == null)
+        // Get BPM from DataHandler and set it in SongHandler
+        float xmlBpm = dataHandler.GetBPMFromXML();
+        if (songHandler != null)
         {
-            Debug.LogError("Could not find Learner part (P1) in XML!");
-            return;
+            songHandler.SetOriginalBPM(xmlBpm);
         }
-
-        Debug.Log("Found Learner part (P1), parsing notes...");
-
-        // Parse notes from the Learner part only
-        foreach (var noteElement in learnerPart.Descendants("note"))
-        {
-            NoteData note = new NoteData();
-
-            // Get duration
-            var durationElement = noteElement.Element("duration");
-            if (durationElement != null)
-            {
-                int durationTicks = int.Parse(durationElement.Value);
-                note.duration = durationTicks * secondsPerTick;
-            }
-
-            // Check if rest
-            var restElement = noteElement.Element("rest");
-            if (restElement != null)
-            {
-                note.isRest = true;
-                note.pitch = "REST";
-            }
-            else
-            {
-                note.isRest = false;
-                var pitchElement = noteElement.Element("pitch");
-                if (pitchElement != null)
-                {
-                    var step = pitchElement.Element("step");
-                    var octave = pitchElement.Element("octave");
-                    if (step != null && octave != null)
-                    {
-                        note.pitch = step.Value + octave.Value;
-                    }
-                }
-            }
-
-            note.startTime = currentTime;
-            notes.Add(note);
-            currentTime += note.duration;
-        }
-
-        Debug.Log($"Loaded {notes.Count} notes, BPM: {xmlBpm}");
-    }
-
-    public void StartGame()
-    {
-        isPlaying = true;
-        currentTime = 0f;
-
-        // Spawn notes that should have already been spawned before game started
-        SpawnInitialNotes();
-
-        // Start game mode
-        if (gameModeManager != null)
-        {
-            gameModeManager.StartMode();
-        }
-
-        Debug.Log("Game started! Press P to pause, R to restart.");
     }
 
     void StartGameFromFirstHit(NoteData hitNote)
     {
-        isWaitingForFirstHit = false;
-        isPlaying = true;
+        if (gameStateManager != null)
+        {
+            gameStateManager.SetGameState(GameState.Playing);
+        }
 
         // Sync timing to the note that was actually hit
         currentTime = hitNote.startTime;
@@ -351,7 +196,10 @@ public class GameplayManager : MonoBehaviour, IService
 
     public void PauseGame()
     {
-        isPlaying = false;
+        // Note: We don't have a Paused state anymore, so this could either:
+        // 1. Go back to Preparing state, or
+        // 2. Stay in Playing but pause the game mode
+        // For now, let's pause the game mode but keep the state as Playing
 
         // Pause game mode
         if (gameModeManager != null)
@@ -364,8 +212,10 @@ public class GameplayManager : MonoBehaviour, IService
 
     public void RestartGame()
     {
-        isPlaying = false;
-        isWaitingForFirstHit = true;
+        if (gameStateManager != null)
+        {
+            gameStateManager.SetGameState(GameState.Preparing);
+        }
         currentTime = 0f;
 
         // End and reinitialize current game mode
@@ -408,8 +258,9 @@ public class GameplayManager : MonoBehaviour, IService
     }
 
     // Public properties for other scripts to access
-    public bool IsPlaying => isPlaying;
+    public bool IsPlaying => gameStateManager != null && gameStateManager.IsPlaying();
     public bool IsSetupComplete => isSetupComplete;
+    public bool IsWaitingForFirstHit => gameStateManager != null && gameStateManager.IsPreparing();
     public float hitWindow = 0.2f; // Time window for hitting notes (in seconds)
 
     // Method for piano input to call when notes are hit
@@ -424,7 +275,7 @@ public class GameplayManager : MonoBehaviour, IService
         Debug.Log($"Note hit: {note.pitch} with accuracy: {accuracy:F2}");
 
         // Check if this is the first hit and we're waiting for it
-        if (isWaitingForFirstHit)
+        if (gameStateManager != null && gameStateManager.IsPreparing())
         {
             StartGameFromFirstHit(note);
         }
@@ -446,6 +297,8 @@ public class GameplayManager : MonoBehaviour, IService
         {
             Debug.LogWarning($"Could not find GameObject for note: {note.pitch}");
         }
+
+
 
         // Notify GameModeManager
         if (gameModeManager != null)
@@ -531,7 +384,8 @@ public class GameplayManager : MonoBehaviour, IService
 
     void UpdateNotes()
     {
-        // Spawn new notes based on offset before their hit time
+        // Spawn notes from XML data based on time
+        float noteSpawnOffset = songHandler != null ? songHandler.GetNoteSpawnOffset() : 3f;
         foreach (var note in notes)
         {
             if (!note.isRest &&
@@ -557,7 +411,15 @@ public class GameplayManager : MonoBehaviour, IService
                 NoteController noteController = noteObj.GetComponent<NoteController>();
                 if (noteController != null)
                 {
-                    noteController.UpdatePosition(currentTime, noteSpawnOffset, noteArrivalOffset);
+                    // During preparation, we need to position notes based on their actual start time
+                    // rather than the current game time (which is 0)
+                    float timeToUse = gameStateManager != null && gameStateManager.IsPreparing()
+                        ? 0f  // Use 0 for preparation so notes show their correct positions
+                        : currentTime;
+
+                    float noteSpawnOffset = songHandler != null ? songHandler.GetNoteSpawnOffset() : 3f;
+                    float noteArrivalOffset = songHandler != null ? songHandler.GetNoteArrivalOffset() : 0f;
+                    noteController.UpdatePosition(timeToUse, noteSpawnOffset, noteArrivalOffset);
                 }
             }
         }
@@ -581,6 +443,7 @@ public class GameplayManager : MonoBehaviour, IService
     void SpawnInitialNotes()
     {
         // Spawn notes that should have already been spawned before the game started
+        float noteSpawnOffset = songHandler != null ? songHandler.GetNoteSpawnOffset() : 3f;
         foreach (var note in notes)
         {
             if (!note.isRest &&
@@ -594,12 +457,20 @@ public class GameplayManager : MonoBehaviour, IService
 
     bool IsNoteAlreadySpawned(NoteData note)
     {
+        // Check if a note with this pitch and start time has already been spawned
         foreach (var noteObj in activeNotes)
         {
-            if (noteObj != null && noteObj.name.Contains(note.pitch) &&
-                noteObj.name.Contains(note.startTime.ToString("F1")))
+            if (noteObj != null)
             {
-                return true;
+                NoteController noteController = noteObj.GetComponent<NoteController>();
+                if (noteController != null && noteController.noteData != null)
+                {
+                    if (noteController.noteData.pitch == note.pitch &&
+                        Mathf.Abs(noteController.noteData.startTime - note.startTime) < 0.1f)
+                    {
+                        return true;
+                    }
+                }
             }
         }
         return false;
@@ -635,33 +506,15 @@ public class GameplayManager : MonoBehaviour, IService
         }
         else
         {
-            // Fallback: create from scratch
-            noteObj = new GameObject($"Note_{note.pitch}_{note.startTime:F1}_{note.duration:F1}");
-            noteController = noteObj.AddComponent<NoteController>();
-
-            // Get the existing SpriteRenderer from the NoteController or add one if it doesn't exist
-            SpriteRenderer sr = noteController.spriteRenderer;
-            if (sr == null)
-            {
-                sr = noteObj.GetComponent<SpriteRenderer>();
-                if (sr == null)
-                {
-                    sr = noteObj.AddComponent<SpriteRenderer>();
-                }
-                noteController.spriteRenderer = sr;
-            }
-
-            // Set the visual properties using board colors
-            sr.color = gameBoard.GetLaneColor(note.pitch);
-            if (sr.sprite == null)
-            {
-                sr.sprite = CreateSquareSprite();
-            }
+            noteObj = null;
+            noteController = null;
+            return;
         }
 
         // Initialize with GameplayManager reference
         if (noteController != null)
         {
+            float noteTravelTime = songHandler != null ? songHandler.GetNoteTravelTime() : 3f;
             noteController.Initialize(note, spawnPos, targetPos, noteTravelTime, this);
         }
 
@@ -690,16 +543,14 @@ public class GameplayManager : MonoBehaviour, IService
                 NoteController noteController = noteObj.GetComponent<NoteController>();
                 if (noteController != null && noteController.noteData != null)
                 {
-                    if (noteController.HasCompletelyPassedBoard()
-                    )
+                    if (noteController.HasCompletelyPassedBoard())
                     {
-                        // targetBarController?.OnReleaseHitEffect();
                         noteController.Release();
                         noteController.UnlinkFromPianoKey();
-
                     }
-                    float timeSinceSpawn = currentTime - noteController.noteData.startTime;
-                    if (timeSinceSpawn > 4f) // Remove after 4 seconds
+
+                    // Remove notes that have passed their start time by more than 4 seconds
+                    if (currentTime > noteController.noteData.startTime + 4f)
                     {
                         toRemove.Add(noteObj);
                         notesToRemove.Add(noteController.noteData);
@@ -717,7 +568,7 @@ public class GameplayManager : MonoBehaviour, IService
             activeNotes.Remove(noteObj);
         }
 
-        // Clean up dictionary
+        // Clean up dictionaries
         foreach (var note in notesToRemove)
         {
             noteToGameObjectMap.Remove(note);
@@ -734,88 +585,20 @@ public class GameplayManager : MonoBehaviour, IService
             }
         }
         activeNotes.Clear();
+        noteToGameObjectMap.Clear();
     }
 
-
-
-    Sprite CreateSquareSprite()
-    {
-        Texture2D texture = new Texture2D(32, 32);
-        Color[] pixels = new Color[32 * 32];
-        for (int i = 0; i < pixels.Length; i++)
-        {
-            pixels[i] = Color.white;
-        }
-        texture.SetPixels(pixels);
-        texture.Apply();
-        return Sprite.Create(texture, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f));
-    }
-
-    // Add method to set BPM and time scale
-    public void SetBPM(float newBPM)
-    {
-        // Check max BPM limit
-        if (settingsManager != null && settingsManager.MaxBPM > 0)
-        {
-            newBPM = Mathf.Min(newBPM, settingsManager.MaxBPM);
-        }
-
-        currentBPM = newBPM;
-        timeScale = newBPM / originalBPM;
-
-        // Update note travel time to maintain visual consistency
-        float speedMultiplier = currentBPM / originalBPM;
-        noteTravelTime = 3f / speedMultiplier;
-
-        // Calculate and store the original travel speed if not already done
-        if (originalTravelSpeed == 0f && gameBoard != null)
-        {
-            Vector3 spawnPos = gameBoard.GetSpawnPosition("C");
-            Vector3 targetPos = gameBoard.GetTargetPosition("C");
-            float totalDistance = Vector3.Distance(spawnPos, targetPos);
-            originalTravelSpeed = totalDistance / 3f; // Based on original noteTravelTime of 3f
-        }
-
-        Debug.Log($"BPM changed to {newBPM}, Time scale: {timeScale:F2}, Note travel time: {noteTravelTime:F2}");
-    }
-
-    // Add method to reset BPM to original
     public void ResetBPM()
     {
-        currentBPM = originalBPM;
-        timeScale = 1f;
-        noteTravelTime = 3f;
-
-        Debug.Log($"BPM reset to original: {originalBPM}");
+        if (songHandler != null)
+        {
+            songHandler.ResetBPM();
+        }
     }
 
-    // Add a getter for the original travel speed
     public float GetOriginalTravelSpeed()
     {
-        // If originalTravelSpeed is still 0, calculate it now
-        if (originalTravelSpeed == 0f && gameBoard != null)
-        {
-            InitializeOriginalTravelSpeed();
-        }
-
-        // Fallback if still 0
-        if (originalTravelSpeed == 0f)
-        {
-            return 1f; // Return a safe default value
-        }
-
-        return originalTravelSpeed;
-    }
-
-    private void InitializeOriginalTravelSpeed()
-    {
-        if (originalTravelSpeed == 0f && gameBoard != null)
-        {
-            Vector3 spawnPos = gameBoard.GetSpawnPosition("C");
-            Vector3 targetPos = gameBoard.GetTargetPosition("C");
-            float totalDistance = Vector3.Distance(spawnPos, targetPos);
-            originalTravelSpeed = totalDistance / noteTravelTime; // Use the current noteTravelTime
-        }
+        return songHandler != null ? songHandler.GetOriginalTravelSpeed() : 1f;
     }
 
     public void Initialize()

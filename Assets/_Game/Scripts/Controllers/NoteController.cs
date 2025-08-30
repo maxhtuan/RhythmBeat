@@ -28,6 +28,7 @@ public class NoteController : MonoBehaviour
     private float hitWindow = 0.2f; // This will be set from GameplayManager
     [Header("Settings")]
     public GameplayManager gameplayManager;
+    public GameSettingsManager settingsManager;
 
     // Linking system
     private PianoKey linkedPianoKey = null;
@@ -43,7 +44,7 @@ public class NoteController : MonoBehaviour
         endPosition = end;
         this.travelTime = travelTime;
         gameplayManager = gm;
-
+        settingsManager = ServiceLocator.Instance.GetService<GameSettingsManager>();
         if (gameplayManager != null)
         {
             hitWindow = gameplayManager.hitWindow;
@@ -133,7 +134,7 @@ public class NoteController : MonoBehaviour
     // Calculate if the note has completely passed the board
     private bool CheckIfPassedBoard(float currentTime)
     {
-        // Calculate when the note should arrive at target
+        // Use original XML timing
         float noteArrivalTime = noteData.startTime;
 
         // Calculate the total time the note needs to completely pass the board
@@ -149,7 +150,7 @@ public class NoteController : MonoBehaviour
     {
         if (maskHitRemaining == null) return;
 
-        // Calculate when the note should arrive at target
+        // Use original XML timing
         float noteArrivalTime = noteData.startTime;
 
         // Calculate how much time has passed since the note arrived
@@ -181,10 +182,12 @@ public class NoteController : MonoBehaviour
         // Set the hit window color
         hitWindowIndicator.color = hitWindowColor;
 
-        // Calculate the visual size of the hit window based on travel speed and GameplayManager's hit window
+        // Calculate the visual size of the hit window based on current travel speed and GameplayManager's hit window
         float totalDistance = Vector3.Distance(startPosition, endPosition);
-        float travelSpeed = totalDistance / travelTime;
-        float hitWindowDistance = hitWindow * travelSpeed; // Use GameplayManager's hit window value
+        float currentTravelSpeed = gameplayManager != null ?
+            (totalDistance / ServiceLocator.Instance.GetService<SongHandler>().GetNoteTravelTime()) :
+            (totalDistance / travelTime);
+        float hitWindowDistance = hitWindow * currentTravelSpeed; // Use GameplayManager's hit window value
 
         // Make the hit window a small rectangle at the front of the note
         if (IsWindowSizeChangeEnabled())
@@ -200,32 +203,34 @@ public class NoteController : MonoBehaviour
         if (!hasPassedBoard && CheckIfPassedBoard(currentTime))
         {
             hasPassedBoard = true;
-            Debug.Log($"Note {noteData.GetNoteName()} has completely passed the board");
         }
-
-        // Calculate when this note should arrive at target (with arrival offset)
-        float noteArrivalTime = noteData.startTime + noteArrivalOffset;
 
         // Calculate the total travel distance
         float totalDistance = Vector3.Distance(startPosition, endPosition);
 
-        // Use the ORIGINAL travel speed for positioning (not affected by BPM changes)
-        float originalTravelSpeed = gameplayManager != null ? gameplayManager.GetOriginalTravelSpeed() : (totalDistance / travelTime);
+        // Get current travel speed
+        float currentTravelSpeed = gameplayManager != null ?
+            (totalDistance / ServiceLocator.Instance.GetService<SongHandler>().GetNoteTravelTime()) :
+            (totalDistance / travelTime);
 
-        // Calculate when this note should start its journey using the original travel speed
-        float noteStartTime = noteArrivalTime - (totalDistance / originalTravelSpeed);
+        // Use original XML timing
+        float noteArrivalTime = noteData.startTime + noteArrivalOffset;
+
+        // Calculate when this note should start its journey
+        float noteStartTime = noteArrivalTime - (totalDistance / currentTravelSpeed);
 
         // Calculate how much time has passed since this note should have started
         float timeSinceNoteShouldStart = currentTime - noteStartTime;
 
-        // Calculate distance traveled using the ORIGINAL travel speed (not current)
-        float distanceTraveled = timeSinceNoteShouldStart * originalTravelSpeed;
+        // Calculate distance traveled
+        float distanceTraveled = timeSinceNoteShouldStart * currentTravelSpeed;
 
-        // Allow notes to continue flowing past the target (no clamping)
+        // Position the note
         Vector3 direction = (endPosition - startPosition).normalized;
         transform.position = startPosition + (direction * distanceTraveled);
 
         // Update visual length using original travel speed
+        float originalTravelSpeed = gameplayManager != null ? gameplayManager.GetOriginalTravelSpeed() : (totalDistance / travelTime);
         UpdateNoteVisualLength(originalTravelSpeed);
 
         // Update hit window visual position
@@ -405,10 +410,13 @@ public class NoteController : MonoBehaviour
             hitWindowIndicator.color = windowColor;
         }
 
-        // Calculate when the note should be at the target
+        // Use original XML timing
         float noteArrivalTime = noteData.startTime;
+
         float totalDistance = Vector3.Distance(startPosition, endPosition);
-        float travelSpeed = totalDistance / travelTime;
+        float currentTravelSpeed = gameplayManager != null ?
+            (totalDistance / ServiceLocator.Instance.GetService<SongHandler>().GetNoteTravelTime()) :
+            (totalDistance / travelTime);
 
         // Calculate current time relative to note arrival
         float timeUntilHit = noteArrivalTime - Time.time;
@@ -423,7 +431,7 @@ public class NoteController : MonoBehaviour
         {
             Vector3 notePosition = transform.position;
             Vector3 direction = (endPosition - startPosition).normalized;
-            float hitWindowDistance = hitWindow * travelSpeed;
+            float hitWindowDistance = hitWindow * currentTravelSpeed;
 
             if (isHit)
             {
@@ -445,13 +453,13 @@ public class NoteController : MonoBehaviour
 
     public bool IsWindowSizeChangeEnabled()
     {
-        if (gameplayManager != null && gameplayManager.settingsManager != null)
+        if (settingsManager != null)
         {
-            return gameplayManager.settingsManager.AllowWindowSizeChanges;
+            return settingsManager.AllowWindowSizeChanges;
         }
         return true; // Default to true if settings not available
     }
 
     public bool AllowWindowSizeChanges =>
-        gameplayManager?.settingsManager?.AllowWindowSizeChanges ?? true;
+        settingsManager?.AllowWindowSizeChanges ?? true;
 }

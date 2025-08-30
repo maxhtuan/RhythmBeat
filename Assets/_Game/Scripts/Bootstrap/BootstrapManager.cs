@@ -11,6 +11,10 @@ public class BootstrapManager : MonoBehaviour
     public MetronomeManager metronomeManager;
     public ScoreManager scoreManager;
     public GameplayManager gameplayManager;
+    public PianoKeyManager pianoKeyManager;
+    public DataHandler dataHandler;
+    public SongHandler songHandler;
+    public GameBoard gameBoard;
 
     private void Awake()
     {
@@ -61,6 +65,26 @@ public class BootstrapManager : MonoBehaviour
         if (gameplayManager != null)
         {
             ServiceLocator.Instance.RegisterService(gameplayManager);
+        }
+
+        if (pianoKeyManager != null)
+        {
+            ServiceLocator.Instance.RegisterService(pianoKeyManager);
+        }
+
+        if (dataHandler != null)
+        {
+            ServiceLocator.Instance.RegisterService(dataHandler);
+        }
+
+        if (songHandler != null)
+        {
+            ServiceLocator.Instance.RegisterService(songHandler);
+        }
+
+        if (gameBoard != null)
+        {
+            ServiceLocator.Instance.RegisterService(gameBoard);
         }
 
         // Initialize all services

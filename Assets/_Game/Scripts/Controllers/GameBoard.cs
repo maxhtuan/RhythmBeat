@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GameBoard : MonoBehaviour
+public class GameBoard : MonoBehaviour, IService
 {
     [Header("Board Settings")]
     public float boardWidth = 10f;
@@ -28,12 +28,6 @@ public class GameBoard : MonoBehaviour
     private float laneHeight;
     private Vector3[] lanePositions;
     private bool isInitialized = false;
-
-    // Keep the original Start() method but make it call Initialize()
-    void Start()
-    {
-        Initialize();
-    }
 
     public void Initialize()
     {
@@ -201,5 +195,10 @@ public class GameBoard : MonoBehaviour
                 );
             }
         }
+    }
+
+    public void Cleanup()
+    {
+        Debug.Log("GameBoard: Cleaned up");
     }
 }

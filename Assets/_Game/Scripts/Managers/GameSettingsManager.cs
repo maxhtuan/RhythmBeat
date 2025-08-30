@@ -6,6 +6,7 @@ public class GameSettingsManager : MonoBehaviour, IService
     public GameSettings gameSettings;
 
     private GameplayManager gameplayManager;
+    private SongHandler songHandler;
     private bool isInitialized = false;
 
     // Remove Start() method - initialization will be called from GameplayManager
@@ -19,6 +20,7 @@ public class GameSettingsManager : MonoBehaviour, IService
         {
             gameplayManager = FindObjectOfType<GameplayManager>();
         }
+        this.songHandler = ServiceLocator.Instance.GetService<SongHandler>();
 
         // Load settings if not assigned
         if (gameSettings == null)
@@ -42,11 +44,13 @@ public class GameSettingsManager : MonoBehaviour, IService
     public void ApplyGameplaySettings()
     {
         if (gameplayManager == null) return;
+        this.songHandler = ServiceLocator.Instance.GetService<SongHandler>();
+
 
         // Apply settings to GameplayManager
-        gameplayManager.noteTravelTime = gameSettings.defaultNoteTravelTime;
-        gameplayManager.noteSpawnOffset = gameSettings.noteSpawnOffset;
-        gameplayManager.noteArrivalOffset = gameSettings.noteArrivalOffset;
+        songHandler.noteTravelTime = gameSettings.defaultNoteTravelTime;
+        songHandler.noteSpawnOffset = gameSettings.noteSpawnOffset;
+        songHandler.noteArrivalOffset = gameSettings.noteArrivalOffset;
         gameplayManager.hitWindow = gameSettings.hitWindow;
 
         Debug.Log("Gameplay settings applied");
