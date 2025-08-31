@@ -17,7 +17,8 @@ public class BootstrapManager : MonoBehaviour
     public GameBoard gameBoard;
     public NoteManager noteManager;
     public GameUIManager gameUIManager;
-
+    public FirebaseManager firebaseManager;
+    public GameplayLogger gameplayLogger;
     private void Awake()
     {
         DontDestroyOnLoad(gameObject);
@@ -97,6 +98,16 @@ public class BootstrapManager : MonoBehaviour
         if (gameUIManager != null)
         {
             ServiceLocator.Instance.RegisterService(gameUIManager);
+        }
+
+        if (firebaseManager != null)
+        {
+            ServiceLocator.Instance.RegisterService(firebaseManager);
+        }
+
+        if (gameplayLogger != null)
+        {
+            ServiceLocator.Instance.RegisterService(gameplayLogger);
         }
 
         // Initialize all services

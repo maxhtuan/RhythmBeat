@@ -30,7 +30,8 @@ MonoBehaviour:
   enableMissEffects: 1
   maxActiveNotes: 50
   noteCleanupDelay: 4
-  bpmIncreaseAmount: 60
+  baseBPMSpeedUpMode: 60
+  bpmIncreaseAmount: 4
   beatsBeforeSpeedUp: 1
   maxBPM: 120
   enableDebugLogs: 1

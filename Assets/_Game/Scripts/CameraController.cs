@@ -113,10 +113,6 @@ public class CameraController : MonoBehaviour
 
         targetPosition.z = transform.position.z; // Keep the camera's current Z position
         transform.position = targetPosition;
-
-        // Debug info
-        Debug.Log($"Camera adjusted - Height size: {heightSize:F2}, Width size: {widthSize:F2}, " +
-                  $"Final size: {requiredSize:F2}, View mode: {viewMode}");
     }
 
     // Method to set a new target sprite

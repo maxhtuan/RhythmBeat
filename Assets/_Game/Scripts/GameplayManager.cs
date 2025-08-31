@@ -51,6 +51,8 @@ public class GameplayManager : MonoBehaviour, IService
     private GameStateManager gameStateManager;
     private DataHandler dataHandler;
     private SongHandler songHandler;
+    private FirebaseManager firebaseManager;
+    private GameplayLogger gameplayLogger;
 
 
     // Make it public so SpeedUpMode can access it
@@ -64,10 +66,10 @@ public class GameplayManager : MonoBehaviour, IService
         Debug.Log("Setup complete!");
     }
 
-    async Task SetupGameAsync()
+    public async Task SetupGameAsync()
     {
         // Step 1: Initialize all managers first
-        InitializeAllManagers();
+        await InitializeAllManagers();
 
         gameStateManager.SetGameState(GameState.None);
 
@@ -98,6 +100,8 @@ public class GameplayManager : MonoBehaviour, IService
         gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
         noteManager = ServiceLocator.Instance.GetService<NoteManager>();
         gameUIManager = ServiceLocator.Instance.GetService<GameUIManager>();
+        firebaseManager = ServiceLocator.Instance.GetService<FirebaseManager>();
+        gameplayLogger = ServiceLocator.Instance.GetService<GameplayLogger>();
         Debug.Log("Starting manager initialization...");
 
         if (gameUIManager != null)
@@ -166,9 +170,16 @@ public class GameplayManager : MonoBehaviour, IService
 
         // Get BPM from DataHandler and set it in SongHandler
         float xmlBpm = dataHandler.GetBPMFromXML();
+
+        bool isSpeedUpMode = gameModeManager.IsSpeedUpMode();
+
         if (songHandler != null)
         {
             songHandler.SetOriginalBPM(xmlBpm);
+            if (isSpeedUpMode)
+            {
+                songHandler.SetBPM(settingsManager.BaseBPMSpeedUpMode);
+            }
         }
     }
 
@@ -182,6 +193,9 @@ public class GameplayManager : MonoBehaviour, IService
         // Sync timing to the note that was actually hit
         currentTime = hitNote.startTime;
         Debug.Log($"First note hit! Game started! Syncing to note '{hitNote.pitch}' at {currentTime:F2}s");
+
+        // Start gameplay logging session
+        StartGameplayLogging(hitNote);
 
         // Start game mode (SpeedUpMode will handle metronome)
         if (gameModeManager != null)
@@ -205,6 +219,19 @@ public class GameplayManager : MonoBehaviour, IService
         if (gameUIManager != null)
         {
             gameUIManager.OnGameStartedFromFirstHit();
+        }
+    }
+
+    private void StartGameplayLogging(NoteData firstNote)
+    {
+        if (gameplayLogger != null)
+        {
+            string gameMode = gameModeManager.IsSpeedUpMode() ? "SpeedUp" : "Perform";
+            float initialBPM = songHandler.GetCurrentBPM();
+            int totalNotes = noteManager.GetActiveNotesCount();
+
+            gameplayLogger.StartSession(gameMode, initialBPM, totalNotes);
+            Debug.Log($"GameplayLogger: Started logging session for {gameMode} mode, BPM: {initialBPM}, Total Notes: {totalNotes}");
         }
     }
 
@@ -291,6 +318,9 @@ public class GameplayManager : MonoBehaviour, IService
 
         Debug.Log($"Note hit: {note.pitch} with accuracy: {accuracy:F2}");
 
+        // Log the note hit
+        LogNoteHit(note, accuracy);
+
         // Check if this is the first hit and we're waiting for it
         if (gameStateManager != null && gameStateManager.IsPreparing())
         {
@@ -308,6 +338,11 @@ public class GameplayManager : MonoBehaviour, IService
                 noteController.Hit();
                 noteController.LinkWithPianoKey(pianoKey);
                 targetBarController?.PlayOnHitEffect();
+
+                // Trigger vibration on note hit (based on accuracy)
+                TriggerVibrationByAccuracy(accuracy);
+
+
                 Debug.Log($"Note {note.pitch} marked as hit");
             }
         }
@@ -344,6 +379,9 @@ public class GameplayManager : MonoBehaviour, IService
 
         Debug.Log($"Note released: {note?.pitch}");
 
+        // Log the note release
+        LogNoteRelease(note);
+
         // Find the note GameObject using NoteManager
         GameObject noteObj = noteManager?.GetNoteGameObject(note);
         if (noteObj != null)
@@ -361,6 +399,13 @@ public class GameplayManager : MonoBehaviour, IService
         {
             Debug.LogWarning($"Could not find GameObject for note: {note.pitch}");
         }
+    }
+
+    public void OnEndGame()
+    {
+        ClearAllNotes();
+        gameplayLogger.EndSession();
+        gameModeManager.EndMode();
     }
 
     public void OnNoteHolding(PianoKey pianoKey)
@@ -418,6 +463,153 @@ public class GameplayManager : MonoBehaviour, IService
 
     public void Cleanup()
     {
+        // End gameplay logging session
+        if (gameplayLogger != null && gameplayLogger.IsLogging())
+        {
+            gameplayLogger.EndSession();
+        }
+
         Debug.Log("GameplayManager: Cleaned up");
+    }
+
+    // Gameplay logging methods
+    private void LogNoteHit(NoteData note, float accuracy)
+    {
+        if (gameplayLogger != null && gameplayLogger.IsLogging())
+        {
+            gameplayLogger.LogNoteHit(note.pitch, note.notePosition, note.startTime, accuracy, currentTime, note.isRest);
+        }
+    }
+
+    private void LogNoteRelease(NoteData note)
+    {
+        if (gameplayLogger != null && gameplayLogger.IsLogging())
+        {
+            gameplayLogger.LogNoteRelease(note.pitch, note.notePosition, note.startTime, note.isRest);
+        }
+    }
+
+    public void LogNoteMiss(NoteData note)
+    {
+        if (gameplayLogger != null && gameplayLogger.IsLogging())
+        {
+            gameplayLogger.LogNoteMiss(note.pitch, note.notePosition, note.startTime, note.isRest);
+        }
+    }
+
+    public void LogBPMChange(float oldBPM, float newBPM, string reason)
+    {
+        if (gameplayLogger != null && gameplayLogger.IsLogging())
+        {
+            gameplayLogger.LogBPMChange(oldBPM, newBPM, reason);
+        }
+    }
+
+    public void LogPatternComplete()
+    {
+        if (gameplayLogger != null && gameplayLogger.IsLogging())
+        {
+            gameplayLogger.LogPatternComplete();
+        }
+    }
+
+    // Vibration methods
+    private void TriggerVibration()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Android vibration
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            {
+                AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+                AndroidJavaObject vibrator = currentActivity.Call<AndroidJavaObject>("getSystemService", "vibrator");
+                vibrator.Call("vibrate", 50); // 50ms vibration
+            }
+        }
+#elif UNITY_IOS && !UNITY_EDITOR
+        // iOS vibration
+        if (Application.platform == RuntimePlatform.IPhonePlayer)
+        {
+            Handheld.Vibrate();
+        }
+#elif UNITY_WEBGL && !UNITY_EDITOR
+        // WebGL vibration (if supported by browser)
+        if (Application.platform == RuntimePlatform.WebGLPlayer)
+        {
+            // Use WebGL vibration API
+            Application.ExternalEval(@"
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            ");
+        }
+#else
+        // Editor or other platforms - use Unity's built-in vibration
+        if (SystemInfo.supportsVibration)
+        {
+            Handheld.Vibrate();
+        }
+#endif
+    }
+
+    // Vibration with custom duration
+    private void TriggerVibration(int durationMs)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Android vibration with custom duration
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            {
+                AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+                AndroidJavaObject vibrator = currentActivity.Call<AndroidJavaObject>("getSystemService", "vibrator");
+                vibrator.Call("vibrate", durationMs);
+            }
+        }
+#elif UNITY_IOS && !UNITY_EDITOR
+        // iOS vibration (fixed duration)
+        if (Application.platform == RuntimePlatform.IPhonePlayer)
+        {
+            Handheld.Vibrate();
+        }
+#elif UNITY_WEBGL && !UNITY_EDITOR
+        // WebGL vibration with custom duration
+        if (Application.platform == RuntimePlatform.WebGLPlayer)
+        {
+            Application.ExternalEval($@"
+                if (navigator.vibrate) {{
+                    navigator.vibrate({durationMs});
+                }}
+            ");
+        }
+#else
+        // Editor or other platforms
+        if (SystemInfo.supportsVibration)
+        {
+            Handheld.Vibrate();
+        }
+#endif
+    }
+
+    // Vibration based on accuracy
+    private void TriggerVibrationByAccuracy(float accuracy)
+    {
+        // Different vibration patterns based on accuracy
+        if (accuracy >= 0.9f)
+        {
+            // Perfect hit - short, sharp vibration
+            TriggerVibration(30);
+        }
+        else if (accuracy >= 0.7f)
+        {
+            // Good hit - medium vibration
+            TriggerVibration(50);
+        }
+        else
+        {
+            // Poor hit - longer vibration
+            TriggerVibration(80);
+        }
     }
 }

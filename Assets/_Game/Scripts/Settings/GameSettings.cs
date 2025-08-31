@@ -65,6 +65,10 @@ public class GameSettings : ScriptableObject
     [Tooltip("Note cleanup delay in seconds")]
     public float noteCleanupDelay = 4f;
 
+
+    [Tooltip("Base BPM Speed Up mode")]
+    public float baseBPMSpeedUpMode = 60f;
+
     [Header("Speed Up Mode Settings")]
     [Tooltip("BPM increase amount per speed up")]
     public float bpmIncreaseAmount = 10f;

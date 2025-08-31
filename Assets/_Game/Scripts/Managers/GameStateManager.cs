@@ -26,6 +26,12 @@ public class GameStateManager : MonoBehaviour, IService
                 break;
 
             case GameState.End:
+
+                var gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
+                gameplayManager.OnEndGame();
+
+                var gameUIManager = ServiceLocator.Instance.GetService<GameUIManager>();
+                gameUIManager.OnEndGame();
                 OnGameEnded?.Invoke();
                 break;
         }

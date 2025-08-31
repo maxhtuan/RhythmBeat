@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using TMPro;
 using System.Xml.Linq;
 using System.Linq;
+using Unity.VisualScripting;
+using UnityEngine.InputSystem;
 
 public class TimeManager : MonoBehaviour, IService
 {
@@ -28,6 +30,13 @@ public class TimeManager : MonoBehaviour, IService
 
     void Update()
     {
+        // Check for Q key press using new Input System
+        if (Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
+        {
+            songEndTriggered = true;
+            TriggerGameEnd();
+        }
+
         if (isInitialized)
         {
             UpdateProgress();

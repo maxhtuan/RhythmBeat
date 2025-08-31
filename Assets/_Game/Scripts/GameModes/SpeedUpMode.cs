@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using DG.Tweening;
+using System.Collections;
 
 public class SpeedUpMode : IGameMode
 {
@@ -55,6 +56,7 @@ public class SpeedUpMode : IGameMode
         }
 
         Debug.Log($"Speed Up Mode: Original BPM = {originalBPM}, Seconds per beat = {secondsPerBeat:F2}");
+        gameplayManager.SetupGameAsync();
     }
 
     public void TriggerThisMode()
@@ -173,7 +175,8 @@ public class SpeedUpMode : IGameMode
         // Check if we've completed a full pattern (6 notes)
         if (hitCount >= 6)
         {
-            await OnPatternComplete();
+            Debug.Log($"Speed Up Mode: Pattern complete detected! Starting coroutine. Hit count: {hitCount}");
+            gameplayManager.StartCoroutine(OnPatternComplete());
         }
     }
 
@@ -199,17 +202,23 @@ public class SpeedUpMode : IGameMode
     }
 
     // Method to handle pattern completion (called when all 6 notes are hit)
-    public async Task OnPatternComplete()
+    public IEnumerator OnPatternComplete()
     {
-        Debug.Log("Speed Up Mode: Pattern Complete - Adding BPM");
 
+        Debug.Log("Speed Up Mode: OnPatternComplete");
         // Wait exactly 1 beat duration based on current BPM
         float beatDuration = 60f / songHandler.GetCurrentBPM();
-        int delayMs = Mathf.RoundToInt(beatDuration * 1000f);
-        await Task.Delay(delayMs);
+        int delayMs = Mathf.RoundToInt(beatDuration);
+        delayMs = Mathf.Max(delayMs, 1);
+        yield return new WaitForSeconds(delayMs);
+        Debug.Log("Speed Up Mode: After delay");
 
         var gameUIManager = ServiceLocator.Instance.GetService<GameUIManager>();
-        gameUIManager.OnSpeedUpTriggered();
+
+        var gameSettingsManager = ServiceLocator.Instance.GetService<GameSettingsManager>();
+        var bpmIncreaseAmount = gameSettingsManager.BPMIncreaseAmount;
+        gameUIManager.OnSpeedUpTriggered(bpmIncreaseAmount);
+        Debug.Log($"Speed Up Mode: Pattern Complete - Adding {bpmIncreaseAmount} BPM");
 
         // Smooth BPM increase
         var curBMP = songHandler.GetCurrentBPM();
@@ -218,7 +227,7 @@ public class SpeedUpMode : IGameMode
         {
             songHandler.OnAddBPM(x - original);
             original = songHandler.GetCurrentBPM();
-        }, curBMP + 5f, 1f).OnComplete(() =>
+        }, curBMP + bpmIncreaseAmount, 1f).OnComplete(() =>
         {
         });
 

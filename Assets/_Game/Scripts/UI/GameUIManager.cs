@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 using System.Threading.Tasks;
+using System.Collections;
 
 public class GameUIManager : MonoBehaviour, IService
 {
@@ -11,9 +12,6 @@ public class GameUIManager : MonoBehaviour, IService
     public GameObject gameplayPanel;
     public GameObject pausePanel;
     public GameObject gameOverPanel;
-
-    public Action onSpeedUpTriggered;
-
 
     [SerializeField] GameObject speedUpPanel; // the panel that shows when speed up is triggered
 
@@ -33,7 +31,7 @@ public class GameUIManager : MonoBehaviour, IService
 
     [Header("Pause Menu")]
     public Button resumeButton;
-    public Button restartButton;
+    public Button restartButton, retryButton;
     public Button backToTitleButton;
 
     [Header("Game Over")]
@@ -65,8 +63,6 @@ public class GameUIManager : MonoBehaviour, IService
             gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
         }
 
-        onSpeedUpTriggered += OnSpeedUpTriggered;
-
         SetupUI();
         ShowTitleScreen();
         isInitialized = true;
@@ -85,6 +81,9 @@ public class GameUIManager : MonoBehaviour, IService
 
         if (restartButton != null)
             restartButton.onClick.AddListener(OnRestartButtonClicked);
+
+        if (retryButton != null)
+            retryButton.onClick.AddListener(OnRestartButtonClicked);
 
         if (backToTitleButton != null)
             backToTitleButton.onClick.AddListener(OnBackToTitleClicked);
@@ -303,10 +302,18 @@ public class GameUIManager : MonoBehaviour, IService
         }
     }
 
-    public async void OnSpeedUpTriggered()
+    public async void OnSpeedUpTriggered(float bpmIncreaseAmount)
     {
+        speedUpPanel.GetComponent<TextMeshProUGUI>().text = $"Speed up +{bpmIncreaseAmount} BPM";
+        speedUpPanel.GetComponent<Animator>().SetTrigger("SpeedUp");
         ShowPanel(speedUpPanel);
-        await Task.Delay(1500);
+        StartCoroutine(IDelay());
+    }
+
+    IEnumerator IDelay()
+    {
+
+        yield return new WaitForSeconds(1.5f);
         HidePanel(speedUpPanel);
     }
 
@@ -341,6 +348,14 @@ public class GameUIManager : MonoBehaviour, IService
         UpdateUIForState();
     }
 
+    public void OnEndGame()
+    {
+        ShowPanel(gameOverPanel);
+        HidePanel(titlePanel);
+        HidePanel(gameplayPanel);
+        HidePanel(pausePanel);
+    }
+
     // Public method to show game over screen
     public void ShowGameOver()
     {
@@ -353,6 +368,5 @@ public class GameUIManager : MonoBehaviour, IService
 
     public void Cleanup()
     {
-        onSpeedUpTriggered = null;
     }
 }

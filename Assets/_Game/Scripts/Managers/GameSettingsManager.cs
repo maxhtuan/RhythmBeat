@@ -41,6 +41,15 @@ public class GameSettingsManager : MonoBehaviour, IService
         Debug.Log("GameSettingsManager: Initialized");
     }
 
+    public void ApplyFirebaseSettings(float bpmIncreaseAmount, float maxBPM, float hitWindow, float baseBPMSpeedUpMode)
+    {
+        if (gameSettings == null) return;
+        gameSettings.bpmIncreaseAmount = bpmIncreaseAmount;
+        gameSettings.maxBPM = maxBPM;
+        gameSettings.hitWindow = hitWindow;
+        gameSettings.baseBPMSpeedUpMode = baseBPMSpeedUpMode;
+    }
+
     public void ApplyGameplaySettings()
     {
         if (gameplayManager == null) return;
@@ -128,9 +137,11 @@ public class GameSettingsManager : MonoBehaviour, IService
     public float HitWindow => gameSettings?.hitWindow ?? 0.2f;
     public float NoteLengthMultiplier => gameSettings?.noteLengthMultiplier ?? 1f;
     public bool EnableDebugLogs => gameSettings?.enableDebugLogs ?? false;
+
+
     public float BPMIncreaseAmount => gameSettings?.bpmIncreaseAmount ?? 10f;
-    public int BeatsBeforeSpeedUp => gameSettings?.beatsBeforeSpeedUp ?? 3;
     public float MaxBPM => gameSettings?.maxBPM ?? 200f;
+    public float BaseBPMSpeedUpMode => gameSettings?.baseBPMSpeedUpMode ?? 60f;
 
     public void Cleanup()
     {

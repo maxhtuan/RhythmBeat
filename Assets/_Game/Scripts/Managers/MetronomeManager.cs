@@ -95,6 +95,16 @@ public class MetronomeManager : MonoBehaviour, IService
         Debug.Log($"Metronome started at {bpm} BPM. First beat at {nextBeatTime:F2}s (in {timeToNextWholeSecond:F2}s)");
     }
 
+    public void MuteMetronome()
+    {
+        metronomeAudioSource.volume = 0f;
+    }
+
+    public void UnmuteMetronome()
+    {
+        metronomeAudioSource.volume = 0.5f;
+    }
+
     public void StopMetronome()
     {
         isPlaying = false;
