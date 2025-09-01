@@ -325,15 +325,20 @@ public class NoteRenderer : MonoBehaviour
 
         if (hitEffect != null)
         {
-            hitEffectPosition = hitWindowIndicator.transform.position;
-            hitEffect.transform.position = hitEffectPosition;
+            hitEffect.transform.localPosition = Vector3.zero;
             hitEffect.gameObject.SetActive(true);
             hitEffect.Play();
         }
 
         if (onHitEffect != null)
         {
-            onHitEffect.DORestartById("Shake");
+            onHitEffect.transform.DOKill();
+            // onHitEffect.DOPlayById("Shake");
+            // onHitEffect.DORestartById("Shake");
+            // onHitEffect.DOPlay();
+            hitEffect.transform.
+            DOPunchPosition(new Vector3(0.09f, 0, 0), 0.2f, 50, 1).SetLoops(-1, LoopType.Restart)
+            ;
         }
     }
 

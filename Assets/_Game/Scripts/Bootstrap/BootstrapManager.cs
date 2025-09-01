@@ -9,16 +9,15 @@ public class BootstrapManager : MonoBehaviour
     public GameModeManager gameModeManager;
     public GameSettingsManager gameSettingsManager;
     public MetronomeManager metronomeManager;
-    public ScoreManager scoreManager;
     public GameplayManager gameplayManager;
-    public PianoKeyManager pianoKeyManager;
     public DataHandler dataHandler;
     public SongHandler songHandler;
-    public GameBoard gameBoard;
+    public GameBoardManager gameBoard;
     public NoteManager noteManager;
     public GameUIManager gameUIManager;
     public FirebaseManager firebaseManager;
     public GameplayLogger gameplayLogger;
+    public PianoInputHandler pianoInputHandler;
     private void Awake()
     {
         DontDestroyOnLoad(gameObject);
@@ -60,19 +59,9 @@ public class BootstrapManager : MonoBehaviour
             ServiceLocator.Instance.RegisterService(metronomeManager);
         }
 
-        if (scoreManager != null)
-        {
-            ServiceLocator.Instance.RegisterService(scoreManager);
-        }
-
         if (gameplayManager != null)
         {
             ServiceLocator.Instance.RegisterService(gameplayManager);
-        }
-
-        if (pianoKeyManager != null)
-        {
-            ServiceLocator.Instance.RegisterService(pianoKeyManager);
         }
 
         if (dataHandler != null)
@@ -108,6 +97,11 @@ public class BootstrapManager : MonoBehaviour
         if (gameplayLogger != null)
         {
             ServiceLocator.Instance.RegisterService(gameplayLogger);
+        }
+
+        if (pianoInputHandler != null)
+        {
+            ServiceLocator.Instance.RegisterService(pianoInputHandler);
         }
 
         // Initialize all services

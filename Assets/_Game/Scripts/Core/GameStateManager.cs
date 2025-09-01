@@ -11,6 +11,23 @@ public class GameStateManager : MonoBehaviour, IService
     public event Action OnGameStarted;
     public event Action OnGameEnded;
 
+    private GameplayManager gameplayManager;
+    private GameplayLogger gameplayLogger;
+    private GameModeManager gameModeManager;
+    private GameUIManager gameUIManager;
+
+    public void Initialize()
+    {
+
+        gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
+        gameplayLogger = ServiceLocator.Instance.GetService<GameplayLogger>();
+        gameModeManager = ServiceLocator.Instance.GetService<GameModeManager>();
+        gameUIManager = ServiceLocator.Instance.GetService<GameUIManager>();
+        currentState = GameState.Preparing;
+        previousState = GameState.Preparing;
+        Debug.Log("GameStateManager initialized with Preparing state");
+    }
+
     public void SetGameState(GameState newState)
     {
         if (currentState == newState) return;
@@ -26,11 +43,9 @@ public class GameStateManager : MonoBehaviour, IService
                 break;
 
             case GameState.End:
-
-                var gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
                 gameplayManager.OnEndGame();
-
-                var gameUIManager = ServiceLocator.Instance.GetService<GameUIManager>();
+                gameplayLogger.EndSession();
+                gameModeManager.EndMode();
                 gameUIManager.OnEndGame();
                 OnGameEnded?.Invoke();
                 break;
@@ -75,13 +90,6 @@ public class GameStateManager : MonoBehaviour, IService
     public void SubcribeToGameStateChanged(Action<GameState> action)
     {
         OnGameStateChanged += action;
-    }
-
-    public void Initialize()
-    {
-        currentState = GameState.Preparing;
-        previousState = GameState.Preparing;
-        Debug.Log("GameStateManager initialized with Preparing state");
     }
 
     public void Cleanup()

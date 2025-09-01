@@ -15,7 +15,7 @@ public class NoteMovement : MonoBehaviour
     private NoteManager noteManager;
     private GameplayManager gameplayManager;
     protected SongHandler songHandler;
-
+    private GameSettingsManager gameSettingsManager;
     // Board passing detection
     protected bool hasPassedBoard = false;
 
@@ -30,10 +30,10 @@ public class NoteMovement : MonoBehaviour
         // Get services
         gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
         songHandler = ServiceLocator.Instance.GetService<SongHandler>();
-
+        gameSettingsManager = ServiceLocator.Instance.GetService<GameSettingsManager>();
         if (gameplayManager != null)
         {
-            hitWindow = gameplayManager.hitWindow;
+            hitWindow = gameSettingsManager.GetHitWindow();
         }
     }
 

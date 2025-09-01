@@ -27,7 +27,7 @@ public class SongHandler : MonoBehaviour, IService
     private float originalTravelSpeed = 0f;
 
     // Reference to GameBoard for calculating travel speed
-    private GameBoard gameBoard;
+    private GameBoardManager gameBoard;
 
     public void SetBPM(float newBPM, float maxBPM = 0f)
     {
@@ -132,7 +132,7 @@ public class SongHandler : MonoBehaviour, IService
 
     public void Initialize()
     {
-        gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
+        gameBoard = ServiceLocator.Instance.GetService<GameBoardManager>();
         SetupTestUI();
         Debug.Log("SongHandler: Initialized");
     }

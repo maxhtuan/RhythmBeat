@@ -1286,7 +1286,7 @@ MonoBehaviour:
   onHitEffect: {fileID: 269596979113291898}
   onReleaseEffect: {fileID: 0}
   hitEffect: {fileID: 8410458326029380527}
-  childEffect: {fileID: 7404386560033357727}
+  childEffect: {fileID: 8410458326029431225}
   settingsManager: {fileID: 0}
 --- !u!114 &6069429827617071402
 MonoBehaviour:
@@ -1358,7 +1358,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9017795709193425106}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d0390bd8b8ffd640b34fe25065ff1df, type: 3}
   m_Name: 
@@ -2333,5 +2333,10 @@ Transform:
 --- !u!198 &8410458326029380527 stripped
 ParticleSystem:
   m_CorrespondingSourceObject: {fileID: 19890816, guid: 72eec0d451241354eaba5dd6caf318ab, type: 3}
+  m_PrefabInstance: {fileID: 8410458326010865967}
+  m_PrefabAsset: {fileID: 0}
+--- !u!198 &8410458326029431225 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 19880086, guid: 72eec0d451241354eaba5dd6caf318ab, type: 3}
   m_PrefabInstance: {fileID: 8410458326010865967}
   m_PrefabAsset: {fileID: 0}

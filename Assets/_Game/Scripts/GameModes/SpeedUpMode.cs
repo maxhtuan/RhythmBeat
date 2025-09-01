@@ -76,6 +76,7 @@ public class SpeedUpMode : IGameMode
             // Sync metronome BPM from GameplayManager (don't set it directly)
             metronomeManager.SyncBPMFromGameplayManager();
             metronomeManager.StartMetronome();
+            metronomeManager.UnmuteMetronome();
 
             // Sync metronome to current game time
             if (gameplayManager != null)

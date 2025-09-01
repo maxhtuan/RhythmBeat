@@ -7,15 +7,19 @@ public class TargetBarController : MonoBehaviour
 
     public void PlayOnHitEffect()
     {
+        Debug.Log("PlayOnHitEffect");
         CancelAll();
-        onHitEffect?.DORestartAllById("Shake");
+        onHitEffect?.DORestartAllById("Holding");
+        // onHitEffect?.DORestartAllById("Shake");
+        // transform.DOPunchPosition(new Vector3(0.01f, 0, 0), 0.2f, 36, 0.13f).SetLoops(-1, LoopType.Restart);
     }
 
     public void OnHolding()
     {
+        Debug.Log("OnHolding");
         CancelAll();
         onHitEffect?.DORestartAllById("Holding");
-        this.transform.DOLocalMoveX(-0.4934f, 0.15f);
+        // this.transform.DOLocalMoveX(-0.4934f, 0.15f);
     }
 
     public void OnReleaseHitEffect()

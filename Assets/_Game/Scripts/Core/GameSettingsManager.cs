@@ -60,7 +60,6 @@ public class GameSettingsManager : MonoBehaviour, IService
         songHandler.noteTravelTime = gameSettings.defaultNoteTravelTime;
         songHandler.noteSpawnOffset = gameSettings.noteSpawnOffset;
         songHandler.noteArrivalOffset = gameSettings.noteArrivalOffset;
-        gameplayManager.hitWindow = gameSettings.hitWindow;
 
         Debug.Log("Gameplay settings applied");
     }
@@ -138,6 +137,10 @@ public class GameSettingsManager : MonoBehaviour, IService
     public float NoteLengthMultiplier => gameSettings?.noteLengthMultiplier ?? 1f;
     public bool EnableDebugLogs => gameSettings?.enableDebugLogs ?? false;
 
+    public float GetHitWindow()
+    {
+        return gameSettings?.hitWindow ?? 0.2f;
+    }
 
     public float BPMIncreaseAmount => gameSettings?.bpmIncreaseAmount ?? 10f;
     public float MaxBPM => gameSettings?.maxBPM ?? 200f;

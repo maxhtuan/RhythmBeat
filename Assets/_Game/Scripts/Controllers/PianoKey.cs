@@ -27,45 +27,26 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private bool suggestionActive = false;
     private bool isInitialized = false;
     public NoteManager noteManager;
+    public PianoInputHandler pianoInputHandler;
+    public GameSettingsManager gameSettingsManager;
 
     // Remove Start() method - initialization will be called from GameplayManager
 
     public void Initialize()
     {
         if (isInitialized) return;
-
-
-        // Find GameplayManager if not assigned
-        if (gameplayManager == null)
-        {
-            gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
-        }
-
-        // Find AudioManager if not assigned
-        if (audioManager == null)
-        {
-            audioManager = ServiceLocator.Instance.GetService<AudioManager>();
-        }
-
-        if (gameStateManager == null)
-        {
-            gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
-        }
-
-        if (noteManager == null)
-        {
-            noteManager = ServiceLocator.Instance.GetService<NoteManager>();
-        }
-
+        gameplayManager = ServiceLocator.Instance.GetService<GameplayManager>();
+        audioManager = ServiceLocator.Instance.GetService<AudioManager>();
+        gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
+        noteManager = ServiceLocator.Instance.GetService<NoteManager>();
+        pianoInputHandler = ServiceLocator.Instance.GetService<PianoInputHandler>();
+        gameSettingsManager = ServiceLocator.Instance.GetService<GameSettingsManager>();
         gameStateManager.SubcribeToGameStateChanged((gameState) =>
         {
-
             if (gameState == GameState.Preparing)
             {
                 CheckIfShouldSuggest();
             }
-
-
         });
 
         SetupPianoKey();
@@ -209,25 +190,8 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         {
             Debug.LogError($"AudioManager is null for {noteName} key!");
         }
-
-        if (gameplayManager != null && (gameplayManager.IsPlaying || gameplayManager.IsSetupComplete))
-        {
-            // Find the closest note to hit
-            NoteData closestNote = FindClosestNote();
-            if (closestNote != null)
-            {
-                float accuracy = CalculateHitAccuracy(closestNote);
-                gameplayManager.OnNoteHit(this, closestNote, accuracy);
-                linkedNote = closestNote; // Track the linked note
-                Debug.Log($"Hit {noteName} with accuracy: {accuracy:F2}");
-                return;
-            }
-            else
-            {
-                Debug.Log($"Pressed {noteName} but no note to hit");
-            }
-        }
-        gameplayManager.OnNoteHolding(this);
+        pianoInputHandler.OnPianoKeyPressed(this);
+        // gameplayManager.OnNoteHolding(this);
     }
 
     private void OnButtonReleased()
@@ -237,12 +201,12 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         // Release the linked note
         if (linkedNote != null && gameplayManager != null)
         {
-            gameplayManager.OnNoteRelease(this, linkedNote);
+            pianoInputHandler.OnPianoKeyReleased(this, linkedNote);
             linkedNote = null;
         }
         else
         {
-            gameplayManager.OnNoteRelease(this, null);
+            pianoInputHandler.OnPianoKeyReleased(this, null);
         }
         animator.SetBool("PianoKeyHit", false);
     }
@@ -252,7 +216,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (gameplayManager == null) return null;
 
         float currentTime = gameplayManager.GetCurrentTime();
-        float hitWindow = gameplayManager.hitWindow;
+        float hitWindow = gameSettingsManager.GetHitWindow();
 
         NoteData closestNote = null;
         float closestTime = float.MaxValue;
@@ -309,7 +273,7 @@ public class PianoKey : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         float currentTime = gameplayManager.GetCurrentTime();
         float noteArrivalTime = GetNoteArrivalTime(note);
         float timeDiff = Mathf.Abs(noteArrivalTime - currentTime);
-        float hitWindow = gameplayManager.hitWindow;
+        float hitWindow = gameSettingsManager.GetHitWindow();
 
         // Calculate accuracy based on timing
         float accuracy = 1f - (timeDiff / hitWindow);

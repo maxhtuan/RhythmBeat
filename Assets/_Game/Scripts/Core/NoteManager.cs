@@ -17,7 +17,7 @@ public class NoteManager : MonoBehaviour, IService
         return notes;
     }
     // References
-    private GameBoard gameBoard;
+    private GameBoardManager gameBoard;
     private SongHandler songHandler;
     private GameStateManager gameStateManager;
     private GameModeManager gameModeManager;
@@ -25,7 +25,7 @@ public class NoteManager : MonoBehaviour, IService
 
     public void Initialize()
     {
-        gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
+        gameBoard = ServiceLocator.Instance.GetService<GameBoardManager>();
         songHandler = ServiceLocator.Instance.GetService<SongHandler>();
         gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
         gameModeManager = ServiceLocator.Instance.GetService<GameModeManager>();

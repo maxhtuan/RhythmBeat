@@ -560,6 +560,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 9014601812817158123, guid: ce40b42533e39e64589c981f20154291, type: 3}
   m_PrefabInstance: {fileID: 276923154}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &276923158 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1951219869087384348, guid: ce40b42533e39e64589c981f20154291, type: 3}
+  m_PrefabInstance: {fileID: 276923154}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a99fc24f024d28641b371a2dd37c4d9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PianoKey
 --- !u!1 &340301524
 GameObject:
   m_ObjectHideFlags: 0
@@ -2157,6 +2168,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 9014601812817158123, guid: ce40b42533e39e64589c981f20154291, type: 3}
   m_PrefabInstance: {fileID: 891473632}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &891473636 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1951219869087384348, guid: ce40b42533e39e64589c981f20154291, type: 3}
+  m_PrefabInstance: {fileID: 891473632}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a99fc24f024d28641b371a2dd37c4d9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PianoKey
 --- !u!1 &935826587
 GameObject:
   m_ObjectHideFlags: 0
@@ -2826,7 +2848,6 @@ MonoBehaviour:
   gameModeManager: {fileID: 1559904110}
   timelineManager: {fileID: 0}
   timeManager: {fileID: 89564553}
-  hitWindow: 0.2
 --- !u!4 &1165087531
 Transform:
   m_ObjectHideFlags: 0
@@ -2975,7 +2996,6 @@ MonoBehaviour:
   gameSettingsManager: {fileID: 1203563764}
   metronomeManager: {fileID: 887054017}
   gameplayManager: {fileID: 1165087530}
-  pianoKeyManager: {fileID: 1890271659}
   dataHandler: {fileID: 145304986}
   songHandler: {fileID: 604953101}
   gameBoard: {fileID: 1959398077}
@@ -2983,6 +3003,7 @@ MonoBehaviour:
   gameUIManager: {fileID: 1677207545}
   firebaseManager: {fileID: 1675002982}
   gameplayLogger: {fileID: 1397136508}
+  pianoInputHandler: {fileID: 1890271661}
 --- !u!4 &1192241873
 Transform:
   m_ObjectHideFlags: 0
@@ -3778,6 +3799,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 9014601812817158123, guid: ce40b42533e39e64589c981f20154291, type: 3}
   m_PrefabInstance: {fileID: 1636929701}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1636929705 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1951219869087384348, guid: ce40b42533e39e64589c981f20154291, type: 3}
+  m_PrefabInstance: {fileID: 1636929701}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a99fc24f024d28641b371a2dd37c4d9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PianoKey
 --- !u!1001 &1645719286
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3888,11 +3920,33 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 9014601812817158123, guid: ce40b42533e39e64589c981f20154291, type: 3}
   m_PrefabInstance: {fileID: 1645719286}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1645719290 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1951219869087384348, guid: ce40b42533e39e64589c981f20154291, type: 3}
+  m_PrefabInstance: {fileID: 1645719286}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a99fc24f024d28641b371a2dd37c4d9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PianoKey
 --- !u!224 &1670860053 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 9014601812817158123, guid: ce40b42533e39e64589c981f20154291, type: 3}
   m_PrefabInstance: {fileID: 5185794413576669350}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1670860056 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1951219869087384348, guid: ce40b42533e39e64589c981f20154291, type: 3}
+  m_PrefabInstance: {fileID: 5185794413576669350}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a99fc24f024d28641b371a2dd37c4d9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PianoKey
 --- !u!1 &1675002981
 GameObject:
   m_ObjectHideFlags: 0
@@ -4327,6 +4381,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1865877755}
   m_CullTransparentMesh: 1
+--- !u!114 &1874473549 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1951219869087384348, guid: ce40b42533e39e64589c981f20154291, type: 3}
+  m_PrefabInstance: {fileID: 1105280484}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a99fc24f024d28641b371a2dd37c4d9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PianoKey
 --- !u!1 &1890271658
 GameObject:
   m_ObjectHideFlags: 0
@@ -4336,26 +4401,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1890271660}
-  - component: {fileID: 1890271659}
+  - component: {fileID: 1890271661}
   m_Layer: 0
-  m_Name: PianoKeyManager
+  m_Name: PianoInputHandler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1890271659
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1890271658}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e76624e8465fa44fb845cf65e5e0045, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PianoKeyManager
 --- !u!4 &1890271660
 Transform:
   m_ObjectHideFlags: 0
@@ -4371,6 +4424,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1192241873}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1890271661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1890271658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b89e6a4c30defd445b8ebbb56af2ac8d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PianoInputHandler
+  gameplayManager: {fileID: 0}
+  pianoKeyComponents:
+  - {fileID: 1670860056}
+  - {fileID: 1645719290}
+  - {fileID: 1874473549}
+  - {fileID: 2147171873}
+  - {fileID: 276923158}
+  - {fileID: 891473636}
+  - {fileID: 1636929705}
+  hitWindow: 0.2
+  targetBarController: {fileID: 490761785}
 --- !u!1 &1927585197
 GameObject:
   m_ObjectHideFlags: 0
@@ -5147,7 +5223,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2126275763}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d0390bd8b8ffd640b34fe25065ff1df, type: 3}
   m_Name: 
@@ -5252,7 +5328,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2126275763}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d0390bd8b8ffd640b34fe25065ff1df, type: 3}
   m_Name: 
@@ -5357,7 +5433,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2126275763}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d0390bd8b8ffd640b34fe25065ff1df, type: 3}
   m_Name: 
@@ -5455,6 +5531,17 @@ MonoBehaviour:
   optionalRotationMode: 0
   optionalScrambleMode: 0
   optionalString: 
+--- !u!114 &2147171873 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1951219869087384348, guid: ce40b42533e39e64589c981f20154291, type: 3}
+  m_PrefabInstance: {fileID: 739804282}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a99fc24f024d28641b371a2dd37c4d9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PianoKey
 --- !u!1001 &4048043931531927823
 PrefabInstance:
   m_ObjectHideFlags: 0

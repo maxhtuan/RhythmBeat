@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GameBoard : MonoBehaviour, IService
+public class GameBoardManager : MonoBehaviour, IService
 {
     [Header("Board Settings")]
     public float boardWidth = 10f;

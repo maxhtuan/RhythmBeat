@@ -22,7 +22,7 @@ public class GameBoardSetup : MonoBehaviour
     void CreateGameBoard()
     {
         // Check if GameBoard already exists
-        GameBoard existingBoard = FindObjectOfType<GameBoard>();
+        GameBoardManager existingBoard = FindObjectOfType<GameBoardManager>();
         if (existingBoard != null)
         {
             Debug.Log("GameBoard already exists in scene!");
@@ -34,7 +34,7 @@ public class GameBoardSetup : MonoBehaviour
         boardObj.transform.position = Vector3.zero;
 
         // Add GameBoard component
-        GameBoard gameBoard = boardObj.AddComponent<GameBoard>();
+        GameBoardManager gameBoard = boardObj.AddComponent<GameBoardManager>();
 
         Debug.Log("GameBoard created successfully!");
     }
@@ -42,7 +42,7 @@ public class GameBoardSetup : MonoBehaviour
     void SetupGameplayManager()
     {
         GameplayManager gameplayManager = FindObjectOfType<GameplayManager>();
-        GameBoard gameBoard = FindObjectOfType<GameBoard>();
+        GameBoardManager gameBoard = FindObjectOfType<GameBoardManager>();
 
         if (gameplayManager != null && gameBoard != null)
         {

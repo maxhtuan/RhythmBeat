@@ -8,7 +8,7 @@ using System;
 public class GameplayManager : MonoBehaviour, IService
 {
     [Header("Basic Settings")]
-    public GameBoard gameBoard; // Assign your GameBoard component here
+    public GameBoardManager gameBoard; // Assign your GameBoard component here
 
     [Header("Note Visual")]
     public float noteLengthMultiplier = 2f; // Multiply note visual length by this value
@@ -97,7 +97,7 @@ public class GameplayManager : MonoBehaviour, IService
         gameStateManager = ServiceLocator.Instance.GetService<GameStateManager>();
         dataHandler = ServiceLocator.Instance.GetService<DataHandler>();
         songHandler = ServiceLocator.Instance.GetService<SongHandler>();
-        gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
+        gameBoard = ServiceLocator.Instance.GetService<GameBoardManager>();
         noteManager = ServiceLocator.Instance.GetService<NoteManager>();
         gameUIManager = ServiceLocator.Instance.GetService<GameUIManager>();
         firebaseManager = ServiceLocator.Instance.GetService<FirebaseManager>();
@@ -183,7 +183,7 @@ public class GameplayManager : MonoBehaviour, IService
         }
     }
 
-    void StartGameFromFirstHit(NoteData hitNote)
+    public void StartGameFromFirstHit(NoteData hitNote)
     {
         if (gameStateManager != null)
         {
@@ -253,50 +253,27 @@ public class GameplayManager : MonoBehaviour, IService
 
     public void RestartGame()
     {
-        if (gameStateManager != null)
-        {
-            gameStateManager.SetGameState(GameState.Preparing);
-        }
+        gameStateManager?.SetGameState(GameState.Preparing);
         currentTime = 0f;
 
         // End and reinitialize current game mode
-        if (gameModeManager != null)
-        {
-            gameModeManager.ReinitializeMode();
-        }
+        gameModeManager?.ReinitializeMode();
 
         // Pause timeline
-        if (timelineManager != null)
-        {
-            timelineManager.PauseTimeline();
-        }
+        timelineManager?.PauseTimeline();
 
         // Reset TimeManager
-        if (timeManager != null)
-        {
-            timeManager.Reset();
-        }
+        timeManager?.Reset();
 
         // Clear all existing notes
         ClearAllNotes();
 
         // Pre-spawn notes for the first 5 seconds again
-        if (noteManager != null)
-        {
-            noteManager.PreSpawnInitialNotes();
-        }
+        noteManager?.PreSpawnInitialNotes();
 
         // Notify UI Manager to show title again
-        if (gameUIManager != null)
-        {
-            gameUIManager.OnGameRestarted();
-        }
-
-        // Stop metronome
-        if (metronomeManager != null)
-        {
-            metronomeManager.StopMetronome();
-        }
+        gameUIManager?.OnGameRestarted();
+        metronomeManager?.StopMetronome();
 
         Debug.Log("Game restarted! Pre-spawned notes for first 5 seconds. Hit the first note to start!");
     }
@@ -305,107 +282,10 @@ public class GameplayManager : MonoBehaviour, IService
     public bool IsPlaying => gameStateManager != null && gameStateManager.IsPlaying();
     public bool IsSetupComplete => isSetupComplete;
     public bool IsWaitingForFirstHit => gameStateManager != null && gameStateManager.IsPreparing();
-    public float hitWindow = 0.2f; // Time window for hitting notes (in seconds)
-
-    // Method for piano input to call when notes are hit
-    public void OnNoteHit(PianoKey pianoKey, NoteData note, float accuracy)
-    {
-        if (!isSetupComplete)
-        {
-            Debug.LogWarning("Game not fully set up yet, ignoring note hit");
-            return;
-        }
-
-        Debug.Log($"Note hit: {note.pitch} with accuracy: {accuracy:F2}");
-
-        // Log the note hit
-        LogNoteHit(note, accuracy);
-
-        // Check if this is the first hit and we're waiting for it
-        if (gameStateManager != null && gameStateManager.IsPreparing())
-        {
-            StartGameFromFirstHit(note);
-        }
-
-        // Find the note GameObject using NoteManager
-        GameObject noteObj = noteManager?.GetNoteGameObject(note);
-        if (noteObj != null)
-        {
-            NoteController noteController = noteObj.GetComponent<NoteController>();
-            if (noteController != null)
-            {
-                // Set the note as hit
-                noteController.Hit();
-                noteController.LinkWithPianoKey(pianoKey);
-                targetBarController?.PlayOnHitEffect();
-
-                // Trigger vibration on note hit (based on accuracy)
-                TriggerVibrationByAccuracy(accuracy);
-
-
-                Debug.Log($"Note {note.pitch} marked as hit");
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"Could not find GameObject for note: {note.pitch}");
-        }
-
-        // Notify GameModeManager
-        if (gameModeManager != null)
-        {
-            gameModeManager.OnBeatHit();
-        }
-    }
-
-    // Method for piano input to call when notes are released
-    public void OnNoteRelease(PianoKey pianoKey, NoteData note)
-    {
-        targetBarController?.OnReleaseHitEffect();
-
-        if (pianoKey == null)
-        {
-            Debug.LogWarning("PianoKey is null");
-            return;
-        }
-
-
-
-        if (note == null)
-        {
-            Debug.LogWarning("Note is null");
-            return;
-        }
-
-        Debug.Log($"Note released: {note?.pitch}");
-
-        // Log the note release
-        LogNoteRelease(note);
-
-        // Find the note GameObject using NoteManager
-        GameObject noteObj = noteManager?.GetNoteGameObject(note);
-        if (noteObj != null)
-        {
-            NoteController noteController = noteObj.GetComponent<NoteController>();
-            if (noteController != null)
-            {
-                // Release the note
-                noteController.Release();
-                noteController.UnlinkFromPianoKey();
-                Debug.Log($"Note {note.pitch} released");
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"Could not find GameObject for note: {note.pitch}");
-        }
-    }
 
     public void OnEndGame()
     {
         ClearAllNotes();
-        gameplayLogger.EndSession();
-        gameModeManager.EndMode();
     }
 
     public void OnNoteHolding(PianoKey pianoKey)
@@ -470,47 +350,6 @@ public class GameplayManager : MonoBehaviour, IService
         }
 
         Debug.Log("GameplayManager: Cleaned up");
-    }
-
-    // Gameplay logging methods
-    private void LogNoteHit(NoteData note, float accuracy)
-    {
-        if (gameplayLogger != null && gameplayLogger.IsLogging())
-        {
-            gameplayLogger.LogNoteHit(note.pitch, note.notePosition, note.startTime, accuracy, currentTime, note.isRest);
-        }
-    }
-
-    private void LogNoteRelease(NoteData note)
-    {
-        if (gameplayLogger != null && gameplayLogger.IsLogging())
-        {
-            gameplayLogger.LogNoteRelease(note.pitch, note.notePosition, note.startTime, note.isRest);
-        }
-    }
-
-    public void LogNoteMiss(NoteData note)
-    {
-        if (gameplayLogger != null && gameplayLogger.IsLogging())
-        {
-            gameplayLogger.LogNoteMiss(note.pitch, note.notePosition, note.startTime, note.isRest);
-        }
-    }
-
-    public void LogBPMChange(float oldBPM, float newBPM, string reason)
-    {
-        if (gameplayLogger != null && gameplayLogger.IsLogging())
-        {
-            gameplayLogger.LogBPMChange(oldBPM, newBPM, reason);
-        }
-    }
-
-    public void LogPatternComplete()
-    {
-        if (gameplayLogger != null && gameplayLogger.IsLogging())
-        {
-            gameplayLogger.LogPatternComplete();
-        }
     }
 
     // Vibration methods

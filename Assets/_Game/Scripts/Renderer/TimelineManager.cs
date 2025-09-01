@@ -7,7 +7,7 @@ public class TimelineManager : MonoBehaviour
 {
     [Header("References")]
     public GameplayManager gameplayManager;
-    public GameBoard gameBoard;
+    public GameBoardManager gameBoard;
     public GameObject linePrefab;
 
     [Header("Timeline Settings")]
@@ -43,7 +43,7 @@ public class TimelineManager : MonoBehaviour
         if (songHandler == null)
             songHandler = ServiceLocator.Instance.GetService<SongHandler>();
         if (gameBoard == null)
-            gameBoard = ServiceLocator.Instance.GetService<GameBoard>();
+            gameBoard = ServiceLocator.Instance.GetService<GameBoardManager>();
         if (noteManager == null)
             noteManager = ServiceLocator.Instance.GetService<NoteManager>();
         InitializeTimeline();
