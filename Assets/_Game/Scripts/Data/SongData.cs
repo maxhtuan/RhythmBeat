@@ -44,6 +44,9 @@ public class NoteData
     public int staff = 1;
     public string stem = "up";
 
+    // Position-based tracking
+    public int notePosition = -1; // Position in the sequence (0, 1, 2, 3...)
+
     // Gameplay properties
     public bool isHit = false;
     public bool isMissed = false;
@@ -82,8 +85,8 @@ public class PhraseData
 
 public enum GameState
 {
-    Menu,
-    Playing,
-    Paused,
-    GameOver
+    None,
+    Preparing,  // Waiting for first hit, showing piano key suggestions
+    Playing,    // Game is actively running
+    End         // Game is finished
 }

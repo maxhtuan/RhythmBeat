@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff7e2c7f7645c0442819a7d1d9156f55, type: 3}
+  m_Name: GameSettings
+  m_EditorClassIdentifier: Assembly-CSharp::GameSettings
+  allowWindowSizeChanges: 1
+  minWindowWidth: 800
+  minWindowHeight: 600
+  maxWindowWidth: 0
+  maxWindowHeight: 0
+  defaultNoteTravelTime: 3
+  noteSpawnOffset: 6
+  noteArrivalOffset: 0
+  hitWindow: 0.2
+  noteLengthMultiplier: 1
+  masterVolume: 1
+  musicVolume: 0.8
+  sfxVolume: 0.9
+  enableParticleEffects: 1
+  enableHitEffects: 1
+  enableMissEffects: 1
+  maxActiveNotes: 50
+  noteCleanupDelay: 4
+  baseBPMSpeedUpMode: 60
+  bpmIncreaseAmount: 4
+  beatsBeforeSpeedUp: 1
+  maxBPM: 120
+  enableDebugLogs: 1
+  showFPSCounter: 1
+  showTimingDebug: 1

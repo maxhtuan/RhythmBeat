@@ -1,10 +1,13 @@
+using System.Threading.Tasks;
+using System.Threading;
 public interface IGameMode
 {
     string ModeName { get; }
     void Initialize();
-    void Start();
+    void TriggerThisMode();
     void Pause();
     void Resume();
     void End();
-    void OnBeatHit();
+    Task OnBeatHit();
+    void OnNoteMissed();
 }
